@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAR3 训练营 · 兽族冲榜数据实验室</title>
+<style>
+:root{
+  --bg:#141418; --panel:#1d1e24; --panel2:#23242c; --line:#3a3b45;
+  --gold:#ffd23f; --goldline:#e0a92f; --ink:#e8e8ec; --sub:#9aa0ab;
+  --green:#1fa06b; --red:#e8554e; --orange:#e8a13a; --blue:#3a6ea5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.65 "PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+a{color:var(--gold);text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#191a20,#141418)}
+header .wrap{display:flex;align-items:baseline;gap:14px;padding:20px 16px 14px;flex-wrap:wrap}
+h1{font-size:22px;color:var(--gold);letter-spacing:1px}
+h1 small{font-size:12px;color:var(--sub);font-weight:normal;margin-left:8px}
+nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav button{background:none;border:1px solid var(--line);color:var(--sub);padding:6px 16px;border-radius:18px;cursor:pointer;font-size:14px}
+nav button.on{background:var(--gold);border-color:var(--gold);color:#141418;font-weight:600}
+section{display:none;padding:22px 0 60px}
+section.on{display:block}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.pills button{background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:5px 14px;border-radius:6px;cursor:pointer}
+.pills button.on{border-color:var(--gold);color:var(--gold);background:#2a2410}
+.grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(280px,4fr);gap:18px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.mapbox{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000}
+.mapbox img{display:block;width:100%;height:auto}
+.tag{position:absolute;transform:translate(-50%,-50%);background:#141418cc;border:1px solid var(--goldline);
+  color:var(--gold);font-weight:700;font-size:12px;border-radius:5px;padding:1px 5px;z-index:4;pointer-events:none}
+.mine{color:#ffd23f}
+.dot{position:absolute;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;
+  border:2px solid #fff;cursor:pointer;z-index:3}
+.dot.easy{background:var(--green)} .dot.medium{background:var(--orange)} .dot.hard{background:var(--red)}
+.dot:hover{box-shadow:0 0 0 4px #ffffff44}
+.dot.sel{box-shadow:0 0 0 4px var(--gold)}
+.spawn{position:absolute;transform:translate(-50%,-50%);width:16px;height:16px;border:2px solid #fff;z-index:3;pointer-events:none}
+.spawn.me{background:var(--blue)} .spawn.opp{background:var(--green)}
+svg.routes{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.card h3{color:var(--gold);font-size:16px;margin-bottom:10px}
+.card .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #33343e;gap:8px}
+.card .row:last-child{border:none}
+.k{color:var(--sub)} .v{text-align:right}
+.lvl{display:inline-block;padding:1px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.lvl.easy{background:#123527;color:#3ddc97}.lvl.medium{background:#3a2c10;color:var(--orange)}.lvl.hard{background:#3b1715;color:#ff8a84}
+.legend{display:flex;gap:16px;color:var(--sub);font-size:12.5px;margin-top:10px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+h2.sec{font-size:18px;color:var(--gold);margin:6px 0 14px;border-left:4px solid var(--goldline);padding-left:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 10px;border:1px solid var(--line);text-align:center}
+th{background:var(--panel2);color:var(--sub);font-weight:600}
+td.hl{color:var(--gold);font-weight:700}
+.matrix td{cursor:default}
+.matrix td.good{background:#173a2a;color:#4fe0a5}.matrix td.bad{background:#3b1a18;color:#ff9d97}
+.matrix td.mid{background:#3a2f10;color:#ffd76b}
+.calc{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.calc label{color:var(--sub);font-size:13px}
+select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:14px}
+.campck{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto;padding-right:6px}
+.campck label{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13.5px}
+.campck label:hover{border-color:var(--goldline)}
+.campck input{accent-color:var(--gold)}
+.campck .xp{margin-left:auto;color:var(--gold);font-weight:600}
+.result{background:#221f10;border:1px solid var(--goldline);border-radius:10px;padding:14px 16px;margin-top:14px}
+.result .big{font-size:20px;color:var(--gold);font-weight:700}
+.step{display:flex;justify-content:space-between;border-bottom:1px dashed #3c3826;padding:5px 0;font-size:13.5px}
+.note{color:var(--sub);font-size:12.5px;margin-top:10px}
+.foot{color:var(--sub);font-size:12px;text-align:center;padding:20px 0 40px;border-top:1px solid var(--line)}
+.qref td{text-align:left}
+.qref td:first-child{color:var(--sub);white-space:nowrap}
+.badge{font-size:11px;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-left:8px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>WAR3 训练营<small>兽族冲榜数据实验室 · 数据源 Liquipedia Preview / battle.net，与《让魔兽再次伟大》手册同源</small></h1>
+  <nav>
+    <button data-t="maps" class="on">地图图鉴</button>
+    <button data-t="calc">练级计算器</button>
+    <button data-t="matrix">攻防克制</button>
+    <button data-t="ref">数据速查</button>
+  </nav>
+</div></header>
+
+<div class="wrap">
+
+<!-- ============ 地图图鉴 ============ -->
+<section id="maps" class="on">
+  <div class="pills" id="mapPills"></div>
+  <div class="grid">
+    <div>
+      <div class="mapbox" id="mapBox"></div>
+      <div class="legend">
+        <span><i style="background:var(--green)"></i>绿点 easy</span>
+        <span><i style="background:var(--orange)"></i>黄点 medium</span>
+        <span><i style="background:var(--red)"></i>红点 hard</span>
+        <span><i style="background:var(--blue)"></i>我方出生</span>
+        <span><i style="background:var(--green)"></i>对面出生</span>
+        <span>酒=酒馆 商=商店 市=市场 实=实验室 雇=雇佣兵 泉=医疗泉 矿=金矿</span>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="campCard"><h3>营地详情</h3><div class="note">点击地图上的营地圆点查看组成、基础经验与掉落；金矿储量看「矿」标记悬停。</div></div>
+      <div class="card" style="margin-top:14px"><h3 id="mapMeta">地图信息</h3><div id="mapRoutes"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 练级计算器 ============ -->
+<section id="calc">
+  <h2 class="sec">练级计算器 —— 点选营地，实时算英雄等级</h2>
+  <div class="calc">
+    <label>地图 <select id="calcMap"></select></label>
+    <label>英雄当前等级 <input type="number" id="heroLv" value="1" min="1" max="4" style="width:64px"></label>
+    <label>当前经验进度% <input type="number" id="heroPct" value="0" min="0" max="99" style="width:64px"></label>
+    <label>基地 <select id="tier"><option value="1">一本(+0%)</option><option value="2">二本单英雄(+15%)</option><option value="3">三本单英雄(+30%)</option></select></label>
+    <label><input type="checkbox" id="soloOnly" checked> 只显示单英雄</label>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>按练级顺序点选营地</h3><div class="campck" id="calcCamps"></div></div>
+    <div>
+      <div class="result" id="calcResult"></div>
+      <div class="note">口径：野怪基础经验按怪等级（25/40/60/85/115/150/190/235…）；TFT 野怪折扣 = 英雄 1 级 ×80%、2 级 ×70%、3 级 ×60%、4 级 ×50%、<b>5 级及以上打野怪无经验</b>；升级需求 200/500/900/1400/2000/2700…（50×(L²+L−2)）。杀玩家单位拿全额。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 攻防克制 ============ -->
+<section id="matrix">
+  <h2 class="sec">攻击 × 护甲 克制矩阵（battle.net 官方表）</h2>
+  <div class="card matrix"><table id="mx"></table>
+  <div class="note">速记：普通克中甲（大G打蜘蛛）· 穿刺克轻甲/无甲（猎头打AC/小鹿/女猎）· 攻城克建筑 · 魔法克重甲 · <b>法术打英雄一律七折</b>。虚灵单位只能被魔法攻击命中；魔免（破法/毁灭/小鹿）免疫法术。低打高：远程导弹类 25% miss（火枪例外）。</div></div>
+  <h2 class="sec" style="margin-top:26px">护甲计算器</h2>
+  <div class="card">
+    <div class="calc"><label>护甲值 <input type="number" id="armor" value="5" step="0.5" style="width:80px"></label>
+    <div id="armorOut" style="font-size:16px;color:var(--gold)"></div></div>
+    <div class="note">正甲：减伤 = 0.06×甲/(1+0.06×甲)；负甲：增伤 = 2 − 0.94^(−甲)。</div>
+  </div>
+</section>
+
+<!-- ============ 速查 ============ -->
+<section id="ref">
+  <h2 class="sec">经验值速查</h2>
+  <div class="card qref"><table>
+    <tr><th>英雄等级</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr>
+    <tr><td>累计需求</td><td>200</td><td>500</td><td>900</td><td>1400</td><td>2000</td><td>2700</td><td>3500</td><td>4400</td><td>5400</td></tr>
+    <tr><td>单位基础经验</td><td colspan="9">按怪等级：1级25 · 2级40 · 3级60 · 4级85 · 5级115 · 6级150 · 7级190 · 8级235 · 9级285 · 10级340</td></tr>
+    <tr><td>团战速算</td><td colspan="9">玩家部队 ≈ 1人口20经验（大G 60/3口 · 蜘蛛 60/3口 · 2人口档40；骑士85/4 · 牛头115/5）· <b>农民例外 1人口25</b> · 50人口全喂≈1000经验</td></tr>
+  </table></div>
+  <h2 class="sec" style="margin-top:26px">中立商店价格（1.27）</h2>
+  <div class="card qref"><table>
+    <tr><th>道具</th><th>价格</th><th>备注</th></tr>
+    <tr><td>显影</td><td>75</td><td>反隐，对 UD/剑圣必备</td></tr>
+    <tr><td>单传</td><td>150</td><td>骚扰后单传接练级；农民进封家缝+英雄单传</td></tr>
+    <tr><td>头环</td><td>200</td><td>剑圣第一目标</td></tr>
+    <tr><td>群补</td><td>250</td><td>见者有份</td></tr>
+    <tr><td>群防</td><td>150</td><td>接团前</td></tr>
+    <tr><td>鞋子</td><td>250</td><td>库存2 · 开局220s上架 · 60s补货；追击型英雄神器</td></tr>
+    <tr><td>无敌</td><td>400</td><td>团战刚需</td></tr>
+    <tr><td>回城 TP</td><td class="hl">350</td><td>1.27 为 350（1.32 起降 325）</td></tr>
+    <tr><td>小血瓶/小蓝瓶</td><td>150/150</td><td>交战残血现买现吃性价比极高</td></tr>
+    <tr><td>球类</td><td colspan="2">火球250（全场最便宜三本球）· 毒球325（三毒球很猛）· 电球/腐蚀球375</td></tr>
+  </table></div>
+  <h2 class="sec" style="margin-top:26px">昼夜与维护费</h2>
+  <div class="card qref"><table>
+    <tr><td>昼夜</td><td>白天240s（06:00→18:00）+ 黑夜240s=480s；指示器8球每球30s；天黑≈4分钟、午夜≈6分钟；野怪夜间睡觉；NE 只夜间回血/月井夜间回蓝；UD 只腐地回血</td></tr>
+    <tr><td>维护费</td><td>51人口起低维护（7/10金）· 81人口起高维护（4/10金）；40/80 两个坎，破人口前先花钱</td></tr>
+    <tr><td>买装优先级</td><td>剑圣先头环/鞋 → 无敌400刚需 → 群补见者有份 → TP常备</td></tr>
+  </table></div>
+  <div class="note" style="margin-top:18px">完整攻略见博客《让魔兽再次伟大》：<a href="https://lucifer.ren/blog/2025/03/20/war3-website/" target="_blank">lucifer.ren/blog/2025/03/20/war3-website/</a></div>
+</section>
+
+</div>
+<div class="foot">WAR3 训练营 · 数据与《让魔兽再次伟大》同源（Liquipedia Preview / battle.net / wc3-gym / 实测笔记）· 营地经验为「基础值」，实战 = 基础 × 英雄等级折扣</div>
+
+<script src="data.js"></script>
+<script>
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const LVLNAME={easy:"绿点",medium:"黄点",hard:"红点"};
+const BLD={tavern:"酒",merchant:"商",marketplace:"市",laboratory:"实",merccamp:"雇",fountainhealth:"泉"};
+const COLOR={easy:"#1fa06b",medium:"#e8a13a",hard:"#e8554e"};
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+});
+
+/* ---------- 地图图鉴 ---------- */
+let curMap=MAPDATA.maps[0].key;
+const pills=$('#mapPills');
+MAPDATA.maps.forEach(m=>{
+  const b=document.createElement('button');b.textContent=m.name;b.dataset.k=m.key;
+  b.onclick=()=>{curMap=m.key;renderMap();renderCalcCamps();
+    const sel=document.querySelector('#calcMap');if(sel){sel.value=curMap;}};
+  pills.appendChild(b);
+});
+function renderMap(){
+  const m=MAPDATA.maps.find(x=>x.key===curMap);
+  [...pills.children].forEach(b=>b.classList.toggle('on',b.dataset.k===curMap));
+  const box=$('#mapBox');box.innerHTML='';
+  const img=new Image();img.src=m.img;img.alt=m.name;box.appendChild(img);
+  img.onload=()=>{drawOverlay(m,box)};
+  // 先画（svg用百分比，无需等待）
+  drawOverlay(m,box);
+  $('#mapMeta').textContent=m.name+' · 路线';
+  const rr=$('#mapRoutes');rr.innerHTML='';
+  (m.routes||[]).forEach(r=>{
+    const d=document.createElement('div');d.className='row';
+    d.innerHTML=`<span class="k">${r.label}</span>`;
+    rr.appendChild(d);
+  });
+  if(!(m.routes||[]).length) rr.innerHTML='<div class="note">该图暂无推荐路线（见手册 2.4 档案）</div>';
+  $('#campCard').innerHTML='<h3>营地详情</h3><div class="note">点击地图上的营地圆点查看组成、基础经验与掉落。</div>';
+}
+function drawOverlay(m,box){
+  box.querySelectorAll('.tag,.dot,.spawn,svg').forEach(e=>e.remove());
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');svg.classList.add('routes');
+  (m.routes||[]).forEach(r=>{
+    const pl=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    pl.setAttribute('points',r.path.map(p=>p[0]*100+','+p[1]*100).join(' '));
+    pl.setAttribute('fill','none');pl.setAttribute('stroke',r.style==='C'?'#e8554e':'#e8a13a');
+    pl.setAttribute('stroke-width','.6');pl.setAttribute('stroke-dasharray',r.style==='B'?'2 1.4':'none');
+    pl.setAttribute('marker-end','url(#arrw)');svg.appendChild(pl);
+    r.path.forEach((p,i)=>{
+      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',p[0]*100);t.setAttribute('y',p[1]*100-1.6);
+      t.setAttribute('font-size','2.6');t.setAttribute('fill','#ffd23f');t.setAttribute('font-weight','700');
+      t.setAttribute('text-anchor','middle');t.textContent='①②③④⑤'[i]||i+1;svg.appendChild(t);
+    });
+  });
+  const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML='<marker id="arrw" markerWidth="4" markerHeight="4" refX="2.4" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="#e8554e"/></marker>';
+  svg.appendChild(defs);box.appendChild(svg);
+  m.objects.forEach(o=>{
+    if(o.type==='spawn'){
+      const s=document.createElement('div');s.className='spawn '+(o.n==='1'?'me':'opp');
+      s.style.left=o.x*100+'%';s.style.top=o.y*100+'%';
+      s.title=(o.n==='1'?'我方':'对面')+'出生';box.appendChild(s);return;
+    }
+    if(o.type==='goldmine'){
+      const t=document.createElement('div');t.className='tag mine';t.textContent='矿';
+      t.style.left=o.x*100+'%';t.style.top=o.y*100+'%';t.title='金矿 '+(o.gold||'?');
+      box.appendChild(t);return;
+    }
+    if(BLD[o.type]){
+      const t=document.createElement('div');t.className='tag';t.textContent=BLD[o.type];
+      t.style.left=o.x*100+'%';t.style.top=o.y*100+'%';box.appendChild(t);
+    }
+  });
+  m.spots.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='dot '+s.level;
+    d.style.left=s.x*100+'%';d.style.top=s.y*100+'%';
+    d.onclick=()=>{
+      box.querySelectorAll('.dot').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');
+      $('#campCard').innerHTML=`<h3>营地 #${i+1} <span class="lvl ${s.level}">${LVLNAME[s.level]}</span></h3>
+        <div class="row"><span class="k">组成</span><span class="v">${s.comp}</span></div>
+        <div class="row"><span class="k">基础经验</span><span class="v" style="color:var(--gold);font-weight:700">${s.xp!=null?s.xp+' 点':'待核'}</span></div>
+        <div class="row"><span class="k">掉落</span><span class="v">${s.drops||'—'}</span></div>
+        <div class="note">实战所得 = 基础 × 英雄等级折扣（1级×0.8 / 2级×0.7 / 3级×0.6）</div>`;
+    };
+    d.title=s.comp+(s.xp!=null?' · 基础'+s.xp:'');
+    box.appendChild(d);
+  });
+}
+
+/* ---------- 计算器 ---------- */
+const need=[0,0,200,500,900,1400,2000,2700,3500,4400,5400];
+const fac={1:.8,2:.7,3:.6,4:.5};
+function lvOf(xp){for(let L=2;L<=10;L++){if(xp<need[L])return L-1+(xp-need[L-1])/(need[L]-need[L-1]);}return 10;}
+const calcSel=[];
+$('#calcMap').innerHTML=MAPDATA.maps.map(m=>`<option value="${m.key}">${m.name}</option>`).join('');
+$('#calcMap').onchange=()=>{calcSel.length=0;renderCalcCamps()};
+function renderCalcCamps(){
+  const m=MAPDATA.maps.find(x=>x.key===($('#calcMap').value||curMap));
+  const c=$('#calcCamps');c.innerHTML='';
+  m.spots.forEach((s,i)=>{
+    const lab=document.createElement('label');
+    lab.innerHTML=`<input type="checkbox" data-i="${i}"><span class="lvl ${s.level}">${LVLNAME[s.level]}</span>
+      <span>${s.comp.slice(0,26)}${s.comp.length>26?'…':''}</span><span class="xp">${s.xp!=null?s.xp:'?'}</span>`;
+    lab.querySelector('input').onchange=e=>{
+      const idx=calcSel.indexOf(i);
+      if(e.target.checked){if(idx<0)calcSel.push(i)}else if(idx>=0)calcSel.splice(idx,1)}
+    c.appendChild(lab);
+  });
+  c.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',updCalc));
+  updCalc();
+}
+function updCalc(){
+  const m=MAPDATA.maps.find(x=>x.key===$('#calcMap').value);
+  let hlv=parseInt($('#heroLv').value)||1;
+  let pct=parseFloat($('#heroPct').value)||0;
+  const tier=parseInt($('#tier').value);
+  const bonus={1:0,2:.15,3:.3}[tier];
+  let xp=need[hlv]+ (need[hlv+1]-need[hlv])*pct/100;
+  const steps=[];
+  for(const i of calcSel){
+    const s=m.spots[i];if(s.xp==null){steps.push({t:s.comp,xp:null,g:0,after:lvOf(xp)});continue}
+    const f=fac[hlv]??0;
+    const g=Math.round(s.xp*f*(1+bonus));
+    xp+=g;steps.push({t:s.comp,xp:s.xp,g,after:lvOf(xp)});
+    hlv=Math.min(5,Math.floor(lvOf(xp)));
+  }
+  const fin=lvOf(xp);
+  $('#calcResult').innerHTML=`
+    <div>路线总收益：<span class="big">${fin.toFixed(2)} 级</span><span class="badge">${hlv>=5?'5级后野怪无经验':''}</span></div>
+    ${steps.map((s,k)=>`<div class="step"><span>${k+1}. ${s.t.slice(0,20)}</span>
+      <span>${s.g>0?`基础${s.xp} → 实得 <b style="color:var(--gold)">${s.g}</b> · 打完 ${s.after.toFixed(2)} 级`:'<span style="color:var(--sub)">经验待核</span>'}</span></div>`).join('')||'<div class="note">左边按顺序勾选营地</div>'}`;
+}
+['#heroLv','#heroPct','#tier'].forEach(s=>$(s).oninput=updCalc);
+
+/* ---------- 克制矩阵 ---------- */
+const ARMORS=["轻甲","中甲","重甲","城甲","英雄","无甲"];
+const ATTACKS=[
+ ["普通（近战）",[1,1.5,1,.7,1,1]],
+ ["穿刺（远程）",[2,.75,1,.35,.5,1.5]],
+ ["攻城",[1,.5,1,1.5,.5,1.5]],
+ ["魔法",[1.25,.75,2,.35,.5,1]],
+ ["英雄攻击",[1,1,1,.5,1,1]],
+ ["混沌",[1,1,1,1,1,1]],
+ ["法术",[1,1,1,1,.7,1]],
+];
+const mx=$('#mx');
+mx.innerHTML='<tr><th>攻击 \\ 护甲</th>'+ARMORS.map(a=>`<th>${a}</th>`).join('')+'</tr>'+
+ ATTACKS.map(r=>'<tr><th>'+r[0]+'</th>'+r[1].map(v=>{
+   const cls=v>1?'good':(v<1?'bad':'');
+   return `<td class="${cls}">${v===1?'100':(v*100).toFixed(0).replace('.','')}%</td>`}).join('')+'</tr>').join('');
+function armorCalc(){
+  const a=parseFloat($('#armor').value)||0;
+  let out;
+  if(a>=0){const r=.06*a/(1+.06*a);out=`${a} 甲 → 减伤 ${(r*100).toFixed(1)}%（等效血量 ×${(1/(1-r)).toFixed(2)}）`;}
+  else{const r=2-Math.pow(.94,-a);out=`${a} 甲 → 多承受 ${(r*100).toFixed(1)}% 伤害`;}
+  $('#armorOut').textContent=out;
+}
+$('#armor').oninput=armorCalc;armorCalc();
+
+renderMap();renderCalcCamps();
+</script>
+</body>
+</html>
