@@ -125,10 +125,10 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
 .dropbadge:hover{border-color:var(--goldline);color:var(--gold)}
 .dpop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:40;background:#1a1b21;border:1px solid var(--goldline);border-radius:10px;padding:10px 12px;width:340px;box-shadow:0 6px 24px #000a}
 .dropwrap:hover .dpop,.dropwrap.open .dpop{display:block}
-.dpop .it{display:flex;gap:7px;align-items:center;padding:2px 0}
-.dpop .it img{width:22px;height:22px;image-rendering:pixelated;border-radius:3px;background:#2c2d36}
+.dpop .it{display:flex;gap:8px;align-items:center;padding:2.5px 0;line-height:1.3}
+.dpop .it img{width:20px;height:20px;flex:0 0 20px;image-rendering:pixelated;border-radius:3px;background:#2c2d36}
+.dpop .it i{font-style:normal;font-size:12.5px;display:inline-block;transform:translateY(0.5px)}
 .dpop .it i{font-style:normal;font-size:12.5px}
-.dot.ins{position:relative}
 .dot.ins::after{content:attr(data-n);position:absolute;top:-9px;right:-9px;min-width:15px;height:15px;line-height:15px;
   text-align:center;background:var(--gold);color:#141418;font-size:10.5px;font-weight:700;border-radius:8px;padding:0 3px;z-index:6}
 .dpop h5{margin:2px 0 6px;color:var(--gold);font-size:13px}
@@ -285,6 +285,7 @@ const COLOR={easy:"#1fa06b",medium:"#e8a13a",hard:"#e8554e"};
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+  saveState();
 });
 
 /* ---------- 地图图鉴 ---------- */
@@ -292,7 +293,7 @@ let curMap=MAPDATA.maps[0].key;
 const pills=$('#mapPills');
 MAPDATA.maps.forEach(m=>{
   const b=document.createElement('button');b.textContent=m.name;b.dataset.k=m.key;
-  b.onclick=()=>{curMap=m.key;seq.length=0;renderMap();updateSeq();};
+  b.onclick=()=>{curMap=m.key;seq.length=0;renderMap();updateSeq();saveState();};
   pills.appendChild(b);
 });
 function renderMap(){
@@ -462,6 +463,7 @@ function updateSeq(){
   let extra='';
   if(seq.length){const nx=Math.min(10,Math.floor(lvOf(xp))+1);const rem=Math.max(0,Math.ceil(need[nx]-xp));
     extra=`<div class="note" style="margin-top:4px">距 ${nx} 级还差 ${rem} 点实得经验</div>`;}
+  saveState();
   $('#seqResult').innerHTML=seq.length?`<div style="margin-top:10px">练完：<span class="big2">${lvOf(xp).toFixed(2)} 级</span>
     ${Math.floor(lvOf(xp))>=5?'<span class="badge">5级后野怪无经验</span>':''}</div>${extra}`:'';
 }
@@ -499,7 +501,7 @@ let curRace="orc";
 const racePills=$('#racePills');
 RACES.forEach(([k,label])=>{
   const b=document.createElement('button');b.textContent=label;b.dataset.k=k;
-  b.onclick=()=>{curRace=k;renderTactic();};
+  b.onclick=()=>{curRace=k;renderTactic();saveState();};
   racePills.appendChild(b);
 });
 function renderTactic(){
@@ -545,7 +547,29 @@ $('#campCard').addEventListener('click',e=>{
   document.querySelectorAll('#campCard .dropwrap').forEach(x=>x.classList.remove('open'));
   if(!wasOpen)w.classList.add('open');
 });
-renderMap();updateSeq();renderTactic();renderManual('micro');
+function saveState(){if(window.__restoring)return;try{localStorage.setItem('war3lab',JSON.stringify({
+  tab:(document.querySelector('nav button.on')||{dataset:{}}).dataset.t||'maps',
+  map:curMap,race:curRace,seq:seq,
+  hlv:$('#heroLv').value,pct:$('#heroPct').value,tier:$('#tier').value}));}catch(e){}}
+(function(){
+  var S={};try{S=JSON.parse(localStorage.getItem('war3lab')||'{}')}catch(e){}
+  if(S.hlv)$('#heroLv').value=S.hlv;
+  if(S.pct)$('#heroPct').value=S.pct;
+  if(S.tier)$('#tier').value=S.tier;
+  if(S.map)curMap=S.map;
+  if(S.race)curRace=S.race;
+  renderMap();renderTactic();renderManual('micro');
+  if(S.seq){var m=curMapObj();seq.length=0;S.seq.forEach(function(i){if(i>=0&&i<m.spots.length)seq.push(i)});}
+  updateSeq();
+  if(S.tab){var b=document.querySelector('nav button[data-t='+S.tab+']');
+    if(b){window.__restoring=true;
+      document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('on',x===b)});
+      document.querySelectorAll('section').forEach(function(s){s.classList.toggle('on',s.id===b.dataset.t)});
+      window.__restoring=false;
+    }}
+  window.__restoring=false;
+})();
+window.addEventListener('beforeunload',saveState);
 </script>
 </body>
 </html>
