@@ -25,6 +25,9 @@ def section(prefix):
             break
     return lines[s:e]
 
+def strip_num(s):
+    return re.sub(r'^(\d+\.\d+\s+|[一二三四五六七八九十]+、\s*)', '', s).strip()
+
 def inline(t):
     t = html.escape(t, quote=False)
     t = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)',
@@ -93,7 +96,7 @@ def to_html(ls):
         if l.startswith('#'):
             flush(ul, 'ul'); flush(ol, 'ol')
             h = len(l) - len(l.lstrip('#'))
-            out.append(f'<h{h}>{inline(l.lstrip("#").strip())}</h{h}>')
+            out.append(f'<h{h}>{inline(strip_num(l.lstrip("#").strip()))}</h{h}>')
             i += 1; continue
         if not l.strip():
             flush(ul, 'ul'); flush(ol, 'ol')
@@ -113,7 +116,7 @@ def build(prefixes):
     for p in prefixes:
         ls = section(p)
         title = ls[0].lstrip('#').strip()
-        frag = {'id': re.sub(r'[^0-9A-Za-z]', '', p)[:10], 'title': title,
+        frag = {'id': re.sub(r'[^0-9A-Za-z]', '', p)[:10], 'title': strip_num(title),
                 'html': to_html(ls[1:])}
         res.append(frag)
     return res
@@ -130,13 +133,13 @@ def subfrags(prefix, race):
         res.append({'id': f'{race}-0', 'title': '总则与开局', 'html': to_html(intro)})
     for k, i in enumerate(idxs):
         end = idxs[k + 1] if k + 1 < len(idxs) else len(ls)
-        res.append({'id': f'{race}-{k+1}', 'title': ls[i].lstrip('#').strip(),
+        res.append({'id': f'{race}-{k+1}', 'title': strip_num(ls[i].lstrip('#').strip()),
                     'html': to_html(ls[i + 1:end])})
     return res
 
 micro = build(MICRO_ARTICLE)
 mlines = open(MICRO_PAGE).read().split('\n')
-micro.append({'id': 'ref', 'title': mlines[0].lstrip('#').strip(), 'html': to_html(mlines[1:])})
+micro.append({'id': 'ref', 'title': strip_num(mlines[0].lstrip('#').strip()), 'html': to_html(mlines[1:])})
 t41 = build(['### 4.1'])[0]
 t46 = build(['### 4.6'])[0]
 content = {
