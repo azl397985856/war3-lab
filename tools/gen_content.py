@@ -105,9 +105,8 @@ def to_html(ls):
     return '\n'.join(out)
 
 TACTIC = ['### 4.1', '### 4.2', '### 4.3', '### 4.4', '### 4.5', '### 4.6']
-TRAIN = ['## 十一、90 天训练计划', '## 十、复盘：把输棋变成经验',
-         '## 六、微操：让 APM 花在刀刃上', '## 七、骚扰与反骚扰',
-         '## 十二、细节备忘（速查）', '## 十三、赛事、工具与资源']
+MICRO_ARTICLE = ['## 六、微操：让 APM 花在刀刃上']
+MICRO_PAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pages', 'micro.md')
 
 def build(prefixes):
     res = []
@@ -119,9 +118,12 @@ def build(prefixes):
         res.append(frag)
     return res
 
-content = {'tactic': build(TACTIC), 'train': build(TRAIN)}
+micro = build(MICRO_ARTICLE)
+mlines = open(MICRO_PAGE).read().split('\n')
+micro.append({'id': 'ref', 'title': mlines[0].lstrip('#').strip(), 'html': to_html(mlines[1:])})
+content = {'tactic': build(TACTIC), 'micro': micro}
 with open(OUT, 'w') as f:
     f.write('const CONTENT=')
     json.dump(content, f, ensure_ascii=False)
 print('tactic:', [(x['title'], len(x['html'])) for x in content['tactic']])
-print('train:', [(x['title'], len(x['html'])) for x in content['train']])
+print('micro:', [(x['title'], len(x['html'])) for x in content['micro']])

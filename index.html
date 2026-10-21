@@ -104,7 +104,7 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
     <button data-t="maps" class="on">地图图鉴</button>
     <button data-t="calc">练级计算器</button>
     <button data-t="tactic">战术手册</button>
-    <button data-t="train">训练手册</button>
+    <button data-t="micro">微操参考</button>
     <button data-t="matrix">攻防克制</button>
     <button data-t="ref">数据速查</button>
   </nav>
@@ -159,8 +159,8 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
   <div class="mbody"></div>
 </section>
 
-<!-- ============ 训练手册 ============ -->
-<section id="train">
+<!-- ============ 微操参考 ============ -->
+<section id="micro">
   <div class="chips"></div>
   <div class="mbody"></div>
 </section>
@@ -389,7 +389,7 @@ function renderManual(tabId){
     d.innerHTML=f.html;body.appendChild(d);
   });
 }
-renderManual('tactic');renderManual('train');
+renderManual('tactic');renderManual('micro');
 </script>
 </body>
 </html>
