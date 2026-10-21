@@ -118,12 +118,39 @@ def build(prefixes):
         res.append(frag)
     return res
 
+def subfrags(prefix, race):
+    # 把 ### 4.x 按 #### 拆成战术片段；#### 之前的内容作为「总则与开局」
+    ls = section(prefix)
+    idxs = [i for i, l in enumerate(ls) if l.startswith('#### ')]
+    res = []
+    if not idxs:
+        return [{'id': f'{race}-0', 'title': ls[0].lstrip('#').strip(), 'html': to_html(ls[1:])}]
+    intro = ls[1:idxs[0]]
+    if any(l.strip() for l in intro):
+        res.append({'id': f'{race}-0', 'title': '总则与开局', 'html': to_html(intro)})
+    for k, i in enumerate(idxs):
+        end = idxs[k + 1] if k + 1 < len(idxs) else len(ls)
+        res.append({'id': f'{race}-{k+1}', 'title': ls[i].lstrip('#').strip(),
+                    'html': to_html(ls[i + 1:end])})
+    return res
+
 micro = build(MICRO_ARTICLE)
 mlines = open(MICRO_PAGE).read().split('\n')
 micro.append({'id': 'ref', 'title': mlines[0].lstrip('#').strip(), 'html': to_html(mlines[1:])})
-content = {'tactic': build(TACTIC), 'micro': micro}
+t41 = build(['### 4.1'])[0]
+t46 = build(['### 4.6'])[0]
+content = {
+    'tactic': {
+        'common': [t41, t46],
+        'orc': subfrags('### 4.2', 'orc'),
+        'ne': subfrags('### 4.3', 'ne'),
+        'hum': subfrags('### 4.4', 'hum'),
+        'ud': subfrags('### 4.5', 'ud'),
+    },
+    'micro': micro,
+}
 with open(OUT, 'w') as f:
     f.write('const CONTENT=')
     json.dump(content, f, ensure_ascii=False)
-print('tactic:', [(x['title'], len(x['html'])) for x in content['tactic']])
 print('micro:', [(x['title'], len(x['html'])) for x in content['micro']])
+print('tactic races:', {r:[f['title'] for f in fs] for r,fs in content['tactic'].items()})

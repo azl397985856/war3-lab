@@ -95,16 +95,31 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
 .frag pre code{background:none;padding:0}
 .frag table{margin:10px 0}
 .frag a{border-bottom:1px dotted var(--goldline)}
+/* ---- 战术手册：种族侧导航 ---- */
+.tgrid{display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px}
+@media(max-width:900px){.tgrid{grid-template-columns:1fr}.snav{position:static;display:flex;flex-wrap:wrap}}
+.snav{position:sticky;top:8px;align-self:start;max-height:calc(100vh - 30px);overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:10px}
+.snav a{display:block;color:var(--sub);padding:6px 10px;border-radius:6px;font-size:13.5px;margin:2px 0}
+.snav a.on{color:#141418;background:var(--gold);font-weight:600}
+.snav a:hover{color:var(--gold)}
+button.ghost{background:none;border:1px solid var(--line);color:var(--sub);border-radius:6px;padding:5px 12px;cursor:pointer}
+button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
+.seqrow{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed #33343e;font-size:13.5px}
+.seqrow .no{color:var(--gold);font-weight:700;min-width:18px}
+.seqrow .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seqrow .lv{color:var(--ink)}
+.seqrow button{background:none;border:none;color:var(--red);cursor:pointer;font-size:15px}
+.big2{font-size:19px;color:var(--gold);font-weight:700}
 </style>
 </head>
 <body>
 <header><div class="wrap">
   <h1>WAR3 训练营<small>兽族冲榜数据实验室 · 数据源 Liquipedia Preview / battle.net，与《让魔兽再次伟大》手册同源</small></h1>
   <nav>
-    <button data-t="maps" class="on">地图图鉴</button>
-    <button data-t="calc">练级计算器</button>
+    <button data-t="maps" class="on">练级地图</button>
     <button data-t="tactic">战术手册</button>
-    <button data-t="micro">微操参考</button>
+    <button data-t="micro">微操</button>
+    <button data-t="dl">下载资源</button>
     <button data-t="matrix">攻防克制</button>
     <button data-t="ref">数据速查</button>
   </nav>
@@ -112,9 +127,16 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
 
 <div class="wrap">
 
-<!-- ============ 地图图鉴 ============ -->
+<!-- ============ 练级地图（图鉴+计算器联动） ============ -->
 <section id="maps" class="on">
   <div class="pills" id="mapPills"></div>
+  <div class="calc">
+    <label>英雄等级 <input type="number" id="heroLv" value="1" min="1" max="4" style="width:60px"></label>
+    <label>当前进度% <input type="number" id="heroPct" value="0" min="0" max="99" style="width:60px"></label>
+    <label>基地 <select id="tier"><option value="1">一本(+0%)</option><option value="2">二本单英雄(+15%)</option><option value="3">三本单英雄(+30%)</option></select></label>
+    <button class="ghost" id="clearSeq">清空序列</button>
+    <span class="note" style="margin:0">点击地图上的营地圆点 → 加入下方练级序列，实时算等级</span>
+  </div>
   <div class="grid">
     <div>
       <div class="mapbox" id="mapBox"></div>
@@ -123,46 +145,53 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
         <span><i style="background:var(--orange)"></i>黄点 medium</span>
         <span><i style="background:var(--red)"></i>红点 hard</span>
         <span><i style="background:var(--blue)"></i>我方出生</span>
-        <span><i style="background:var(--green)"></i>对面出生</span>
+        <span style="color:var(--green)">■ 对面出生</span>
         <span>酒=酒馆 商=商店 市=市场 实=实验室 雇=雇佣兵 泉=医疗泉 矿=金矿</span>
       </div>
     </div>
     <div>
-      <div class="card" id="campCard"><h3>营地详情</h3><div class="note">点击地图上的营地圆点查看组成、基础经验与掉落；金矿储量看「矿」标记悬停。</div></div>
-      <div class="card" style="margin-top:14px"><h3 id="mapMeta">地图信息</h3><div id="mapRoutes"></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 练级计算器 ============ -->
-<section id="calc">
-  <h2 class="sec">练级计算器 —— 点选营地，实时算英雄等级</h2>
-  <div class="calc">
-    <label>地图 <select id="calcMap"></select></label>
-    <label>英雄当前等级 <input type="number" id="heroLv" value="1" min="1" max="4" style="width:64px"></label>
-    <label>当前经验进度% <input type="number" id="heroPct" value="0" min="0" max="99" style="width:64px"></label>
-    <label>基地 <select id="tier"><option value="1">一本(+0%)</option><option value="2">二本单英雄(+15%)</option><option value="3">三本单英雄(+30%)</option></select></label>
-    <label><input type="checkbox" id="soloOnly" checked> 只显示单英雄</label>
-  </div>
-  <div class="grid">
-    <div class="card"><h3>按练级顺序点选营地</h3><div class="campck" id="calcCamps"></div></div>
-    <div>
-      <div class="result" id="calcResult"></div>
-      <div class="note">口径：野怪基础经验按怪等级（25/40/60/85/115/150/190/235…）；TFT 野怪折扣 = 英雄 1 级 ×80%、2 级 ×70%、3 级 ×60%、4 级 ×50%、<b>5 级及以上打野怪无经验</b>；升级需求 200/500/900/1400/2000/2700…（50×(L²+L−2)）。杀玩家单位拿全额。</div>
+      <div class="card" id="campCard"><h3>营地详情</h3><div class="note">点击地图圆点：查看详情并加入练级序列。</div></div>
+      <div class="card" style="margin-top:14px"><h3>练级序列</h3><div id="seqList"></div><div id="seqResult"></div></div>
+      <div class="card" style="margin-top:14px"><h3 id="mapMeta">路线</h3><div id="mapRoutes"></div></div>
     </div>
   </div>
 </section>
 
 <!-- ============ 战术手册 ============ -->
 <section id="tactic">
-  <div class="chips"></div>
-  <div class="mbody"></div>
+  <div class="pills" id="racePills"></div>
+  <div class="tgrid">
+    <aside class="snav" id="tacticNav"></aside>
+    <div class="mbody" id="tacticBody"></div>
+  </div>
 </section>
 
 <!-- ============ 微操参考 ============ -->
 <section id="micro">
   <div class="chips"></div>
   <div class="mbody"></div>
+</section>
+
+<!-- ============ 下载资源 ============ -->
+<section id="dl">
+  <h2 class="sec">微操练习地图</h2>
+  <div class="card qref"><table>
+    <tr><td><a href="https://www.epicwar.com/maps/97003/" target="_blank" rel="noopener">iNSUPERABLE 围杀练习图</a></td><td>围杀专项练习；配套他的两支教学视频（YouTube 搜 iNSUPERABLE surround），围杀原理见「微操」页</td></tr>
+    <tr><td><a href="https://warcraft-gym.com/tools/training-grounds" target="_blank" rel="noopener">Jamie's Training Grounds</a></td><td>WC3 Gym 社区出品的新一代练习图（「一张图从零学会 WC3」），r/WC3 公认老图替代品，首选</td></tr>
+    <tr><td>KK 平台搜「微操」</td><td>中文环境最顺手：自定义游戏里微操锦标赛系列房间很流行</td></tr>
+  </table></div>
+  <h2 class="sec" style="margin-top:26px">改键方案</h2>
+  <div class="card qref"><table>
+    <tr><td><a href="https://lucifer.ren/blog/files/CustomKeys-ORC-Grid.txt" download>兽族网格改键 CustomKeys.txt（完整文件）</a></td><td>304 段全校验版：出兵/科技/技能/酒馆全部按 QWER-ASD-ZXC 网格映射；1.27 放游戏根目录、重制版放 CustomKeyBindings，ANSI 编码</td></tr>
+    <tr><td><a href="https://lucifer.ren/blog/2025/03/20/war3-website/" target="_blank" rel="noopener">网格改键完整教程（手册 5.1）</a></td><td>映射原理、逐段改法、兽族优先改清单、避坑（物品栏键位平台改键才管得了）</td></tr>
+  </table></div>
+  <h2 class="sec" style="margin-top:26px">数据与工具</h2>
+  <div class="card qref"><table>
+    <tr><td><a href="https://liquipedia.net/warcraft" target="_blank" rel="noopener">Liquipedia 魔兽分站</a></td><td>地图档案/Preview 掉落点位/英雄技能上限/单位数据——本站地图数据的源头</td></tr>
+    <tr><td><a href="https://warcraft-gym.com/learn/mechanics" target="_blank" rel="noopener">WC3 Gym · Game Mechanics</a></td><td>教练写的机制文专区（野怪机制/攻防类型/道具等级），本站微操图解的出处</td></tr>
+    <tr><td><a href="https://warcraft3.info/articles/176" target="_blank" rel="noopener">RechraM《Interacting with Creeps》</a></td><td>野怪交互机制拆解（闪电盾/净化/捕网/投石）</td></tr>
+    <tr><td><a href="https://lucifer.ren/blog/2025/03/20/war3-website/" target="_blank" rel="noopener">《让魔兽再次伟大》完整手册</a></td><td>14 章图文：训练计划/战术对位/改键/微操/复盘——本站的文字版母本</td></tr>
+  </table></div>
 </section>
 
 <!-- ============ 攻防克制 ============ -->
@@ -232,8 +261,7 @@ let curMap=MAPDATA.maps[0].key;
 const pills=$('#mapPills');
 MAPDATA.maps.forEach(m=>{
   const b=document.createElement('button');b.textContent=m.name;b.dataset.k=m.key;
-  b.onclick=()=>{curMap=m.key;renderMap();renderCalcCamps();
-    const sel=document.querySelector('#calcMap');if(sel){sel.value=curMap;}};
+  b.onclick=()=>{curMap=m.key;seq.length=0;renderMap();updateSeq();};
   pills.appendChild(b);
 });
 function renderMap(){
@@ -293,63 +321,52 @@ function drawOverlay(m,box){
   m.spots.forEach((s,i)=>{
     const d=document.createElement('div');d.className='dot '+s.level;
     d.style.left=s.x*100+'%';d.style.top=s.y*100+'%';
-    d.onclick=()=>{
-      box.querySelectorAll('.dot').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');
-      $('#campCard').innerHTML=`<h3>营地 #${i+1} <span class="lvl ${s.level}">${LVLNAME[s.level]}</span></h3>
-        <div class="row"><span class="k">组成</span><span class="v">${s.comp}</span></div>
-        <div class="row"><span class="k">基础经验</span><span class="v" style="color:var(--gold);font-weight:700">${s.xp!=null?s.xp+' 点':'待核'}</span></div>
-        <div class="row"><span class="k">掉落</span><span class="v">${s.drops||'—'}</span></div>
-        <div class="note">实战所得 = 基础 × 英雄等级折扣（1级×0.8 / 2级×0.7 / 3级×0.6）</div>`;
-    };
+    d.onclick=()=>selectCamp(i,d);
     d.title=s.comp+(s.xp!=null?' · 基础'+s.xp:'');
     box.appendChild(d);
   });
 }
 
-/* ---------- 计算器 ---------- */
+/* ---------- 练级序列（与地图联动） ---------- */
 const need=[0,0,200,500,900,1400,2000,2700,3500,4400,5400];
 const fac={1:.8,2:.7,3:.6,4:.5};
 function lvOf(xp){for(let L=2;L<=10;L++){if(xp<need[L])return L-1+(xp-need[L-1])/(need[L]-need[L-1]);}return 10;}
-const calcSel=[];
-$('#calcMap').innerHTML=MAPDATA.maps.map(m=>`<option value="${m.key}">${m.name}</option>`).join('');
-$('#calcMap').onchange=()=>{calcSel.length=0;renderCalcCamps()};
-function renderCalcCamps(){
-  const m=MAPDATA.maps.find(x=>x.key===($('#calcMap').value||curMap));
-  const c=$('#calcCamps');c.innerHTML='';
-  m.spots.forEach((s,i)=>{
-    const lab=document.createElement('label');
-    lab.innerHTML=`<input type="checkbox" data-i="${i}"><span class="lvl ${s.level}">${LVLNAME[s.level]}</span>
-      <span>${s.comp.slice(0,26)}${s.comp.length>26?'…':''}</span><span class="xp">${s.xp!=null?s.xp:'?'}</span>`;
-    lab.querySelector('input').onchange=e=>{
-      const idx=calcSel.indexOf(i);
-      if(e.target.checked){if(idx<0)calcSel.push(i)}else if(idx>=0)calcSel.splice(idx,1)}
-    c.appendChild(lab);
+const seq=[];
+function curMapObj(){return MAPDATA.maps.find(x=>x.key===curMap)}
+function selectCamp(i,dot){
+  const m=curMapObj(),s=m.spots[i];
+  const inSeq=seq.includes(i);
+  if(!inSeq){seq.push(i);}
+  if(dot){document.querySelectorAll('#mapBox .dot').forEach(x=>x.classList.remove('sel'));dot.classList.add('sel');}
+  $('#campCard').innerHTML=`<h3>营地 <span class="lvl ${s.level}">${LVLNAME[s.level]}</span>
+    ${inSeq?'<span class="badge">已在序列中</span>':'<span class="badge" style="color:var(--gold);border-color:var(--goldline)">已加入序列 +1</span>'}</h3>
+    <div class="row"><span class="k">组成</span><span class="v">${s.comp}</span></div>
+    <div class="row"><span class="k">基础经验</span><span class="v" style="color:var(--gold);font-weight:700">${s.xp!=null?s.xp+' 点':'待核'}</span></div>
+    <div class="row"><span class="k">掉落</span><span class="v">${s.drops||'—'}</span></div>
+    <div class="note">再次点击序列里的 × 可移除；实战所得 = 基础 × 英雄等级折扣</div>`;
+  updateSeq();
+}
+function updateSeq(){
+  const m=curMapObj();
+  let hlv=parseInt($('#heroLv').value)||1, pct=parseFloat($('#heroPct').value)||0;
+  const tier=parseInt($('#tier').value), bonus={1:0,2:.15,3:.3}[tier];
+  let xp=need[hlv]+(need[hlv+1]-need[hlv])*pct/100;
+  const rows=[];
+  seq.forEach((i,k)=>{
+    const s=m.spots[i];
+    let g=0,after=lvOf(xp);
+    if(s.xp!=null){const f=fac[Math.min(4,Math.floor(lvOf(xp)))]??0;g=Math.round(s.xp*f*(1+bonus));xp+=g;after=lvOf(xp);}
+    rows.push(`<div class="seqrow"><span class="no">${k+1}</span><span class="nm">${s.comp}</span>
+      <span class="lv">${s.xp!=null?`<b style="color:var(--gold)">${g}</b> → ${after.toFixed(2)}级`:'待核'}</span>
+      <button data-k="${k}" title="移除">×</button></div>`);
   });
-  c.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',updCalc));
-  updCalc();
+  $('#seqList').innerHTML=rows.join('')||'<div class="note">点地图圆点，或先选中营地后点「+ 加入序列」</div>';
+  $('#seqList').querySelectorAll('button').forEach(b=>b.onclick=()=>{seq.splice(+b.dataset.k,1);updateSeq();});
+  $('#seqResult').innerHTML=seq.length?`<div style="margin-top:10px">练完：<span class="big2">${lvOf(xp).toFixed(2)} 级</span>
+    ${Math.floor(lvOf(xp))>=5?'<span class="badge">5级后野怪无经验</span>':''}</div>`:'';
 }
-function updCalc(){
-  const m=MAPDATA.maps.find(x=>x.key===$('#calcMap').value);
-  let hlv=parseInt($('#heroLv').value)||1;
-  let pct=parseFloat($('#heroPct').value)||0;
-  const tier=parseInt($('#tier').value);
-  const bonus={1:0,2:.15,3:.3}[tier];
-  let xp=need[hlv]+ (need[hlv+1]-need[hlv])*pct/100;
-  const steps=[];
-  for(const i of calcSel){
-    const s=m.spots[i];if(s.xp==null){steps.push({t:s.comp,xp:null,g:0,after:lvOf(xp)});continue}
-    const f=fac[hlv]??0;
-    const g=Math.round(s.xp*f*(1+bonus));
-    xp+=g;steps.push({t:s.comp,xp:s.xp,g,after:lvOf(xp)});
-    hlv=Math.min(5,Math.floor(lvOf(xp)));
-  }
-  const fin=lvOf(xp);
-  $('#calcResult').innerHTML=`
-    <div>路线总收益：<span class="big">${fin.toFixed(2)} 级</span><span class="badge">${hlv>=5?'5级后野怪无经验':''}</span></div>
-    ${steps.map((s,k)=>`<div class="step"><span>${k+1}. ${s.t.slice(0,20)}</span>
-      <span>${s.g>0?`基础${s.xp} → 实得 <b style="color:var(--gold)">${s.g}</b> · 打完 ${s.after.toFixed(2)} 级`:'<span style="color:var(--sub)">经验待核</span>'}</span></div>`).join('')||'<div class="note">左边按顺序勾选营地</div>'}`;
-}
-['#heroLv','#heroPct','#tier'].forEach(s=>$(s).oninput=updCalc);
+$('#clearSeq').onclick=()=>{seq.length=0;updateSeq();};
+['#heroLv','#heroPct','#tier'].forEach(s=>$(s).oninput=updateSeq);
 
 /* ---------- 克制矩阵 ---------- */
 const ARMORS=["轻甲","中甲","重甲","城甲","英雄","无甲"];
@@ -376,9 +393,38 @@ function armorCalc(){
 }
 $('#armor').oninput=armorCalc;armorCalc();
 
-renderMap();renderCalcCamps();
-
-/* ---------- 手册（战术/训练） ---------- */
+/* ---------- 战术手册：种族 + 侧导航 + 滚动联动 ---------- */
+const RACES=[["common","通用"],["orc","ORC"],["ne","NE"],["hum","HUM"],["ud","UD"]];
+let curRace="orc";
+const racePills=$('#racePills');
+RACES.forEach(([k,label])=>{
+  const b=document.createElement('button');b.textContent=label;b.dataset.k=k;
+  b.onclick=()=>{curRace=k;renderTactic();};
+  racePills.appendChild(b);
+});
+function renderTactic(){
+  [...racePills.children].forEach(b=>b.classList.toggle('on',b.dataset.k===curRace));
+  const nav=$('#tacticNav'), body=$('#tacticBody');
+  nav.innerHTML='';body.innerHTML='';
+  (CONTENT.tactic[curRace]||[]).forEach(f=>{
+    const a=document.createElement('a');a.href='#tf-'+f.id;a.textContent=f.title;nav.appendChild(a);
+    const d=document.createElement('div');d.className='frag';d.id='tf-'+f.id;d.innerHTML=f.html;
+    body.appendChild(d);
+  });
+  bindSpy();
+}
+function bindSpy(){
+  const links=[...document.querySelectorAll('#tacticNav a')];
+  const frags=links.map(a=>document.querySelector(a.getAttribute('href')));
+  const spy=()=>{
+    let act=0;
+    frags.forEach((f,i)=>{if(f && f.getBoundingClientRect().top<140)act=i;});
+    links.forEach((a,i)=>a.classList.toggle('on',i===act));
+  };
+  window.removeEventListener('scroll',window.__spy||(()=>{}));
+  window.__spy=spy;window.addEventListener('scroll',spy,{passive:true});
+  spy();
+}
 function renderManual(tabId){
   const sec=document.getElementById(tabId);
   const chips=sec.querySelector('.chips'), body=sec.querySelector('.mbody');
@@ -389,7 +435,7 @@ function renderManual(tabId){
     d.innerHTML=f.html;body.appendChild(d);
   });
 }
-renderManual('tactic');renderManual('micro');
+renderMap();updateSeq();renderTactic();renderManual('micro');
 </script>
 </body>
 </html>
