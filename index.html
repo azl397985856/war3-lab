@@ -74,6 +74,27 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
 .qref td{text-align:left}
 .qref td:first-child{color:var(--sub);white-space:nowrap}
 .badge{font-size:11px;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-left:8px}
+/* ---- 手册（战术/训练） ---- */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:9;border-bottom:1px solid var(--line)}
+.chips a{color:var(--sub);border:1px solid var(--line);border-radius:16px;padding:4px 14px;font-size:13.5px}
+.chips a:hover{color:var(--gold);border-color:var(--goldline)}
+.mbody{max-width:860px}
+.frag{margin-bottom:6px}
+.frag h2{font-size:20px;color:var(--gold);margin:14px 0 12px;border-left:4px solid var(--goldline);padding-left:10px}
+.frag h3{font-size:17px;color:var(--gold);margin:22px 0 10px}
+.frag h4{font-size:15.5px;color:var(--gold);margin:22px 0 8px;padding-bottom:5px;border-bottom:1px dashed var(--line)}
+.frag h5,.frag h6{font-size:14.5px;color:var(--ink);margin:16px 0 6px}
+.frag p{margin:9px 0}
+.frag ul,.frag ol{margin:9px 0 9px 24px}
+.frag li{margin:5px 0}
+.frag li.sub{margin-left:18px;list-style:circle}
+.frag blockquote{border-left:3px solid var(--goldline);background:#221f10;margin:10px 0;padding:8px 14px;color:#e8dcb8;font-size:14px;border-radius:0 8px 8px 0}
+.frag img{max-width:100%;border-radius:8px;margin:10px auto;display:block}
+.frag code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:13px}
+.frag pre{background:#101014;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;margin:10px 0}
+.frag pre code{background:none;padding:0}
+.frag table{margin:10px 0}
+.frag a{border-bottom:1px dotted var(--goldline)}
 </style>
 </head>
 <body>
@@ -82,6 +103,8 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
   <nav>
     <button data-t="maps" class="on">地图图鉴</button>
     <button data-t="calc">练级计算器</button>
+    <button data-t="tactic">战术手册</button>
+    <button data-t="train">训练手册</button>
     <button data-t="matrix">攻防克制</button>
     <button data-t="ref">数据速查</button>
   </nav>
@@ -128,6 +151,18 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
       <div class="note">口径：野怪基础经验按怪等级（25/40/60/85/115/150/190/235…）；TFT 野怪折扣 = 英雄 1 级 ×80%、2 级 ×70%、3 级 ×60%、4 级 ×50%、<b>5 级及以上打野怪无经验</b>；升级需求 200/500/900/1400/2000/2700…（50×(L²+L−2)）。杀玩家单位拿全额。</div>
     </div>
   </div>
+</section>
+
+<!-- ============ 战术手册 ============ -->
+<section id="tactic">
+  <div class="chips"></div>
+  <div class="mbody"></div>
+</section>
+
+<!-- ============ 训练手册 ============ -->
+<section id="train">
+  <div class="chips"></div>
+  <div class="mbody"></div>
 </section>
 
 <!-- ============ 攻防克制 ============ -->
@@ -179,6 +214,7 @@ select,input[type=number]{background:var(--panel2);color:var(--ink);border:1px s
 <div class="foot">WAR3 训练营 · 数据与《让魔兽再次伟大》同源（Liquipedia Preview / battle.net / wc3-gym / 实测笔记）· 营地经验为「基础值」，实战 = 基础 × 英雄等级折扣</div>
 
 <script src="data.js"></script>
+<script src="content.js"></script>
 <script>
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const LVLNAME={easy:"绿点",medium:"黄点",hard:"红点"};
@@ -341,6 +377,19 @@ function armorCalc(){
 $('#armor').oninput=armorCalc;armorCalc();
 
 renderMap();renderCalcCamps();
+
+/* ---------- 手册（战术/训练） ---------- */
+function renderManual(tabId){
+  const sec=document.getElementById(tabId);
+  const chips=sec.querySelector('.chips'), body=sec.querySelector('.mbody');
+  (CONTENT[tabId]||[]).forEach(f=>{
+    const a=document.createElement('a');a.href='#frag-'+tabId+'-'+f.id;a.textContent=f.title;
+    chips.appendChild(a);
+    const d=document.createElement('div');d.className='frag';d.id='frag-'+tabId+'-'+f.id;
+    d.innerHTML=f.html;body.appendChild(d);
+  });
+}
+renderManual('tactic');renderManual('train');
 </script>
 </body>
 </html>
