@@ -117,6 +117,19 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
 .seqrow .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seqrow .lv{color:var(--ink)}
 .seqrow button{background:none;border:none;color:var(--red);cursor:pointer;font-size:15px}
+.seqrow{cursor:pointer}
+.seqrow:hover{background:#ffffff0a}
+.dot.ins{border-color:var(--gold);box-shadow:0 0 0 3px #ffd23f44}
+.dropwrap{position:relative;display:inline-block}
+.dropbadge{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 7px;margin:1px 2px;cursor:pointer;font-size:12.5px}
+.dropbadge:hover{border-color:var(--goldline);color:var(--gold)}
+.dpop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:40;background:#1a1b21;border:1px solid var(--goldline);border-radius:10px;padding:10px 12px;width:340px;box-shadow:0 6px 24px #000a}
+.dropwrap:hover .dpop,.dropwrap.open .dpop{display:block}
+.dpop h5{margin:2px 0 6px;color:var(--gold);font-size:13px}
+.dpop .cols{display:flex;gap:10px}
+.dpop .col{flex:1;background:#22232b;border-radius:6px;padding:6px 9px}
+.dpop .col b{display:block;color:var(--sub);font-size:11.5px;margin-bottom:4px;font-weight:600}
+.dpop .col span{display:block;font-size:12.5px;padding:1.5px 0;color:var(--ink)}
 .big2{font-size:19px;color:var(--gold);font-weight:700}
 </style>
 </head>
@@ -158,7 +171,7 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
       </div>
     </div>
     <div>
-      <div class="card" id="campCard"><h3>营地详情</h3><div class="note">点击地图圆点：查看详情并加入练级序列。</div></div>
+      <div class="card" id="campCard"><h3>营地详情</h3><div class="note">点击地图圆点：查看详情并加入练级序列（再点一次取消）。点「掉落」徽章可展开该等级的掉落池。</div></div>
       <div class="card" style="margin-top:14px"><h3>练级序列</h3><div id="seqList"></div><div id="seqResult"></div></div>
       <div class="card" style="margin-top:14px"><h3 id="mapMeta">路线</h3><div id="mapRoutes"></div></div>
     </div>
@@ -280,7 +293,7 @@ function renderMap(){
   img.onload=()=>{drawOverlay(m,box)};
   // 先画（svg用百分比，无需等待）
   drawOverlay(m,box);
-  $('#mapMeta').textContent=m.name+' · 路线';
+  $('#mapMeta').textContent=m.name+' · 建议路线';
   const rr=$('#mapRoutes');rr.innerHTML='';
   (m.routes||[]).forEach(r=>{
     const d=document.createElement('div');d.className='row';
@@ -329,7 +342,7 @@ function drawOverlay(m,box){
   m.spots.forEach((s,i)=>{
     const d=document.createElement('div');d.className='dot '+s.level;
     d.style.left=s.x*100+'%';d.style.top=s.y*100+'%';
-    d.onclick=()=>selectCamp(i,d);
+    d.onclick=()=>dotClick(i,d);
     d.title=s.comp+(s.xp!=null?' · 基础'+s.xp:'');
     box.appendChild(d);
   });
@@ -341,17 +354,41 @@ const fac={1:.8,2:.7,3:.6,4:.5};
 function lvOf(xp){for(let L=2;L<=10;L++){if(xp<need[L])return L-1+(xp-need[L-1])/(need[L]-need[L-1]);}return 10;}
 const seq=[];
 function curMapObj(){return MAPDATA.maps.find(x=>x.key===curMap)}
-function selectCamp(i,dot){
+/* 掉落等级池（1.27，代表物品；与手册 5.5 同源） */
+const DROPS={
+ 1:{p:["敏捷之靴+3","优越之戒","暗影斗篷","智力长袍+3","食人魔力量护手+3"],c:[]},
+ 2:{p:["加速手套","守护戒指+3","攻击之爪+5"],c:["水晶球","恢复药水","幻象权杖","岗哨守卫"]},
+ 3:{p:["贵族头环","活力护符","能量坠饰","守护戒指+5","闪避护符","再生戒指","攻击之爪+8"],c:["大治疗/大法力/无敌药水","法力盗取权杖","野兽卷轴"]},
+ 4:{p:["艾露恩长笛","大法师之戒","符文护腕","苏比面具","暴风雄狮号角","法师长袍+6","巨人腰带+6"],c:["重生十字章","治疗守卫","血石/蓝石","亡者之书","飓风权杖"]},
+ 5:{p:["军团末日号角","战歌战鼓","洞察之笛","攻击之爪+12","英勇头盔","狡诈之帽","勇气勋章","烈焰斗篷"],c:["蓝龙蛋","神力药水","恢复卷轴","石像图腾","尖刺项圈"]},
+ 6:{p:["沉默权杖","法术护盾护符","健康宝石","法力坠饰","黑暗宝珠"],c:["野性护符","雕纹鳞片","冰碎片","贪婪权杖","精通权杖","恶魔雕像"]}
+};
+function dropsHtml(s){
+  if(!s.drops)return '—';
+  return s.drops.split(' / ').map(d=>{
+    const m=d.match(/^(永久|充能|强化)(\d)$/); if(!m)return d;
+    return `<span class="dropwrap"><span class="dropbadge" data-lv="${m[2]}" data-tp="${m[1]}">${d} ▾</span>
+      <span class="dpop"><h5>营地掉落池 · ${m[1]}${m[2]} 级</h5><div class="cols">
+        <div class="col"><b>永久池（代表）</b>${DROPS[m[2]].p.map(x=>`<span>${x}</span>`).join('')}</div>
+        <div class="col"><b>消耗/充能池（代表）</b>${DROPS[m[2]].c.length?DROPS[m[2]].c.map(x=>`<span>${x}</span>`).join(''):'<span>—</span>'}</div>
+      </div><div class="note" style="margin-top:6px">营地只从「同类别同等级」池掉落；悬停或点击查看</div></span></span>`;
+  }).join(' ');
+}
+function showCamp(i,dot,msg){
   const m=curMapObj(),s=m.spots[i];
-  const inSeq=seq.includes(i);
-  if(!inSeq){seq.push(i);}
   if(dot){document.querySelectorAll('#mapBox .dot').forEach(x=>x.classList.remove('sel'));dot.classList.add('sel');}
+  const inSeq=seq.includes(i);
   $('#campCard').innerHTML=`<h3>营地 <span class="lvl ${s.level}">${LVLNAME[s.level]}</span>
-    ${inSeq?'<span class="badge">已在序列中</span>':'<span class="badge" style="color:var(--gold);border-color:var(--goldline)">已加入序列 +1</span>'}</h3>
+    ${msg?`<span class="badge" style="color:${msg.a?'var(--gold)':'var(--red)'};border-color:currentColor">${msg.t}</span>`:''}</h3>
     <div class="row"><span class="k">组成</span><span class="v">${s.comp}</span></div>
     <div class="row"><span class="k">基础经验</span><span class="v" style="color:var(--gold);font-weight:700">${s.xp!=null?s.xp+' 点':'待核'}</span></div>
-    <div class="row"><span class="k">掉落</span><span class="v">${s.drops||'—'}</span></div>
-    <div class="note">再次点击序列里的 × 可移除；实战所得 = 基础 × 英雄等级折扣</div>`;
+    <div class="row"><span class="k">掉落</span><span class="v">${dropsHtml(s)}</span></div>
+    <div class="note">点掉落徽章展开该等级掉落池 · 点地图圆点加入/移出序列 · 实战所得 = 基础 × 英雄等级折扣</div>`;
+}
+function dotClick(i,dot){
+  const k=seq.indexOf(i);
+  if(k>=0){seq.splice(k,1);showCamp(i,dot,{t:'已移出序列',a:0});}
+  else{seq.push(i);showCamp(i,dot,{t:'已加入序列 +1',a:1});}
   updateSeq();
 }
 function updateSeq(){
@@ -364,14 +401,31 @@ function updateSeq(){
     const s=m.spots[i];
     let g=0,after=lvOf(xp);
     if(s.xp!=null){const f=fac[Math.min(4,Math.floor(lvOf(xp)))]??0;g=Math.round(s.xp*f*(1+bonus));xp+=g;after=lvOf(xp);}
-    rows.push(`<div class="seqrow"><span class="no">${k+1}</span><span class="nm">${s.comp}</span>
+    rows.push(`<div class="seqrow" data-i="${i}"><span class="no">${k+1}</span><span class="nm">${s.comp}</span>
       <span class="lv">${s.xp!=null?`<b style="color:var(--gold)">${g}</b> → ${after.toFixed(2)}级`:'待核'}</span>
       <button data-k="${k}" title="移除">×</button></div>`);
   });
-  $('#seqList').innerHTML=rows.join('')||'<div class="note">点地图圆点，或先选中营地后点「+ 加入序列」</div>';
-  $('#seqList').querySelectorAll('button').forEach(b=>b.onclick=()=>{seq.splice(+b.dataset.k,1);updateSeq();});
+  $('#seqList').innerHTML=rows.join('')||'<div class="note">点击地图上的营地圆点加入序列（再点一次取消）</div>';
+  $('#seqList').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();seq.splice(+b.dataset.k,1);updateSeq();});
+  $('#seqList').querySelectorAll('.seqrow').forEach(r=>r.onclick=()=>{
+    showCamp(+r.dataset.i, document.querySelectorAll('#mapBox .dot')[+r.dataset.i]);
+    document.getElementById('campCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+  document.querySelectorAll('#mapBox .dot').forEach((d,idx)=>d.classList.toggle('ins',seq.includes(idx)));
+  const svg=document.querySelector('#mapBox svg');
+  if(svg){
+    let line=document.getElementById('seql');
+    if(!line){line=document.createElementNS('http://www.w3.org/2000/svg','polyline');line.id='seql';
+      line.setAttribute('fill','none');line.setAttribute('stroke','#ffd23f');line.setAttribute('stroke-width','.7');
+      line.setAttribute('stroke-dasharray','2 1.2');svg.appendChild(line);}
+    line.setAttribute('points',seq.map(i=>{const s=m.spots[i];return (s.x*100)+','+(s.y*100)}).join(' '));
+    line.style.display=seq.length>1?'':'none';
+  }
+  let extra='';
+  if(seq.length){const nx=Math.min(10,Math.floor(lvOf(xp))+1);const rem=Math.max(0,Math.ceil(need[nx]-xp));
+    extra=`<div class="note" style="margin-top:4px">距 ${nx} 级还差 ${rem} 点实得经验</div>`;}
   $('#seqResult').innerHTML=seq.length?`<div style="margin-top:10px">练完：<span class="big2">${lvOf(xp).toFixed(2)} 级</span>
-    ${Math.floor(lvOf(xp))>=5?'<span class="badge">5级后野怪无经验</span>':''}</div>`:'';
+    ${Math.floor(lvOf(xp))>=5?'<span class="badge">5级后野怪无经验</span>':''}</div>${extra}`:'';
 }
 $('#clearSeq').onclick=()=>{seq.length=0;updateSeq();};
 ['#heroLv','#heroPct','#tier'].forEach(s=>$(s).oninput=updateSeq);
@@ -445,6 +499,14 @@ function renderManual(tabId){
     body.appendChild(d);
   });
 }
+/* 掉落徽章点击展开/收起（触屏无 hover） */
+$('#campCard').addEventListener('click',e=>{
+  const b=e.target.closest('.dropbadge');
+  if(!b)return;
+  const w=b.parentElement,wasOpen=w.classList.contains('open');
+  document.querySelectorAll('#campCard .dropwrap').forEach(x=>x.classList.remove('open'));
+  if(!wasOpen)w.classList.add('open');
+});
 renderMap();updateSeq();renderTactic();renderManual('micro');
 </script>
 </body>
