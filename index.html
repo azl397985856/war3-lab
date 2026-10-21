@@ -125,6 +125,12 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
 .dropbadge:hover{border-color:var(--goldline);color:var(--gold)}
 .dpop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:40;background:#1a1b21;border:1px solid var(--goldline);border-radius:10px;padding:10px 12px;width:340px;box-shadow:0 6px 24px #000a}
 .dropwrap:hover .dpop,.dropwrap.open .dpop{display:block}
+.dpop .it{display:flex;gap:7px;align-items:center;padding:2px 0}
+.dpop .it img{width:22px;height:22px;image-rendering:pixelated;border-radius:3px;background:#2c2d36}
+.dpop .it i{font-style:normal;font-size:12.5px}
+.dot.ins{position:relative}
+.dot.ins::after{content:attr(data-n);position:absolute;top:-9px;right:-9px;min-width:15px;height:15px;line-height:15px;
+  text-align:center;background:var(--gold);color:#141418;font-size:10.5px;font-weight:700;border-radius:8px;padding:0 3px;z-index:6}
 .dpop h5{margin:2px 0 6px;color:var(--gold);font-size:13px}
 .dpop .cols{display:flex;gap:10px}
 .dpop .col{flex:1;background:#22232b;border-radius:6px;padding:6px 9px}
@@ -358,24 +364,44 @@ const fac={1:.8,2:.7,3:.6,4:.5};
 function lvOf(xp){for(let L=2;L<=10;L++){if(xp<need[L])return L-1+(xp-need[L-1])/(need[L]-need[L-1]);}return 10;}
 const seq=[];
 function curMapObj(){return MAPDATA.maps.find(x=>x.key===curMap)}
-/* 掉落等级池（1.27，代表物品；与手册 5.5 同源） */
+/* 掉落等级池（1.27，代表物品；与手册 5.5 同源；第二个元素=Liquipedia 图标名） */
 const DROPS={
- 1:{p:["敏捷之靴+3","优越之戒","暗影斗篷","智力长袍+3","食人魔力量护手+3"],c:[]},
- 2:{p:["加速手套","守护戒指+3","攻击之爪+5"],c:["水晶球","恢复药水","幻象权杖","岗哨守卫"]},
- 3:{p:["贵族头环","活力护符","能量坠饰","守护戒指+5","闪避护符","再生戒指","攻击之爪+8"],c:["大治疗/大法力/无敌药水","法力盗取权杖","野兽卷轴"]},
- 4:{p:["艾露恩长笛","大法师之戒","符文护腕","苏比面具","暴风雄狮号角","法师长袍+6","巨人腰带+6"],c:["重生十字章","治疗守卫","血石/蓝石","亡者之书","飓风权杖"]},
- 5:{p:["军团末日号角","战歌战鼓","洞察之笛","攻击之爪+12","英勇头盔","狡诈之帽","勇气勋章","烈焰斗篷"],c:["蓝龙蛋","神力药水","恢复卷轴","石像图腾","尖刺项圈"]},
- 6:{p:["沉默权杖","法术护盾护符","健康宝石","法力坠饰","黑暗宝珠"],c:["野性护符","雕纹鳞片","冰碎片","贪婪权杖","精通权杖","恶魔雕像"]}
+ 1:{p:[["敏捷之靴+3","Slippers_of_Agility"],["优越之戒","Ring_of_Superiority"],["暗影斗篷","Cloak_of_Shadows"],["智力长袍+3","Mantle_of_Intelligence"],["食人魔力量护手+3","Gauntlets_of_Ogre_Strength"]],c:[]},
+ 2:{p:[["加速手套","Gloves_of_Haste"],["守护戒指+3","Ring_of_Protection"],["攻击之爪+5","Claws_of_Attack"]],
+    c:[["水晶球","Crystal_Ball"],["恢复药水","Replenishment_Potion"],["幻象权杖","Wand_of_Illusion"],["岗哨守卫","Sentry_Wards"]]},
+ 3:{p:[["贵族头环","Circlet_of_Nobility"],["活力护符","Periapt_of_Vitality"],["能量坠饰","Pendant_of_Energy"],["闪避护符","Talisman_of_Evasion"],["再生戒指","Ring_of_Regeneration"]],
+    c:[["大治疗药水","Potion_of_Greater_Healing"],["大法力药水","Potion_of_Greater_Mana"],["无敌药水","Potion_of_Invulnerability"],["法力盗取权杖","Wand_of_Mana_Stealing"],["野兽卷轴","Scroll_of_the_Beast"]]},
+ 4:{p:[["艾露恩长笛","Allerias_Flute_of_Accuracy"],["大法师之戒","Ring_of_the_Archmagi"],["符文护腕","Runed_Bracers"],["苏比面具","Sobi_Mask"],["暴风雄狮号角","Lions_Horn_of_Stormwind"],["法师长袍+6","Robe_of_Magi"],["巨人腰带+6","Belt_of_Giant_Strength"]],
+    c:[["重生十字章","Ankh_of_Reincarnation"],["治疗守卫","Healing_Wards"],["血石","Health_Stone"],["蓝石","Mana_Stone"],["亡者之书","Book_of_the_Dead"],["飓风权杖","Wand_of_the_Wind"]]},
+ 5:{p:[["军团末日号角","Legion_Doom_Horn"],["战歌战鼓","Warsong_Battle_Drums"],["洞察之笛","Khadgars_Pipe_of_Insight"],["英勇头盔","Helm_of_Valor"],["狡诈之帽","Hood_of_Cunning"],["勇气勋章","Medallion_of_Courage"],["烈焰斗篷","Cloak_of_Flames"]],
+    c:[["蓝龙蛋","Blue_Drake_Egg"],["神力药水","Potion_of_Divinity"],["恢复卷轴","Scroll_of_Restoration"],["石像图腾","Stone_Token"],["尖刺项圈","Spiked_Collar"]]},
+ 6:{p:[["沉默权杖","Staff_of_Silence"],["法术护盾护符","Amulet_of_Spell_Shield"],["健康宝石","Khadgars_Gem_of_Health"],["法力坠饰","Pendant_of_Mana"],["黑暗宝珠","Orb_of_Darkness"]],
+    c:[["野性护符","Amulet_of_the_Wild"],["贪婪权杖","Scepter_of_Avarice"],["精通权杖","Scepter_of_Mastery"],["恶魔雕像","Demonic_Figurine"]]}
 };
+/* 强化（Power Up）：拾取即生效，不属于永久/消耗池 */
+const POWER={
+ 1:["力量/敏捷/智力之书","生命手册"],
+ 2:["力量/敏捷/智力之书+2","知识书"],
+ 3:["属性书（各图自定）"]
+};
+const ICON=k=>'assets/icons/'+k.toLowerCase().replace(/_/g,'-')+'.png';
+function poolRows(lv,tp){
+  const list=tp==='强化'?POWER[lv]||[]:DROPS[lv][tp==='永久'?'p':'c'].map(x=>x[0]);
+  const pairs=tp==='强化'?list.map(x=>[x,null]):DROPS[lv][tp==='永久'?'p':'c'];
+  return pairs.map(([n,k])=>{
+    const ico=k?`<img src="${ICON(k)}" loading="lazy" onerror="this.style.display='none'">`:'';
+    return `<span class="it">${ico}<i>${n}</i></span>`;}).join('');
+}
 function dropsHtml(s){
   if(!s.drops)return '—';
   return s.drops.split(' / ').map(d=>{
-    const m=d.match(/^(永久|充能|强化)(\d)$/); if(!m)return d;
-    return `<span class="dropwrap"><span class="dropbadge" data-lv="${m[2]}" data-tp="${m[1]}">${d} ▾</span>
-      <span class="dpop"><h5>营地掉落池 · ${m[1]}${m[2]} 级</h5><div class="cols">
-        <div class="col"><b>永久池（代表）</b>${DROPS[m[2]].p.map(x=>`<span>${x}</span>`).join('')}</div>
-        <div class="col"><b>消耗/充能池（代表）</b>${DROPS[m[2]].c.length?DROPS[m[2]].c.map(x=>`<span>${x}</span>`).join(''):'<span>—</span>'}</div>
-      </div><div class="note" style="margin-top:6px">营地只从「同类别同等级」池掉落；悬停或点击查看</div></span></span>`;
+    const mm=d.match(/^(永久|充能|强化)(\d)$/); if(!mm)return d;
+    const tip=mm[1]==='强化'
+      ?`<h5>强化（Power Up）· ${mm[2]} 级</h5><div class="note" style="margin:0 0 6px">拾取立即生效的道具（属性书一类），不属于永久/消耗掉落池</div><div class="col">${poolRows(mm[2],'强化')}</div>`
+      :`<h5>营地掉落池 · ${mm[1]}${mm[2]} 级</h5><div class="col">${poolRows(mm[2],mm[1])}</div>
+        <div class="note" style="margin-top:6px">只从「同类别同等级」池掉落——${mm[1]}${mm[2]} 营地不会掉另一栏的东西</div>`;
+    return `<span class="dropwrap"><span class="dropbadge" data-lv="${mm[2]}" data-tp="${mm[1]}">${d} ▾</span>
+      <span class="dpop">${tip}</span></span>`;
   }).join(' ');
 }
 function showCamp(i,dot,msg){
@@ -409,13 +435,21 @@ function updateSeq(){
       <span class="lv">${s.xp!=null?`<b style="color:var(--gold)">${g}</b> → ${after.toFixed(2)}级`:'待核'}</span>
       <button data-k="${k}" title="移除">×</button></div>`);
   });
+  if(!seq.length){
+    $('#campCard').innerHTML='<h3>营地详情</h3><div class="note">点击地图上的营地圆点：加入/移出练级序列（会标上 ①②③ 顺序号），点「掉落」徽章展开该等级掉落池。</div>';
+    document.querySelectorAll('#mapBox .dot').forEach(d=>{d.classList.remove('sel','ins');delete d.dataset.n;});
+  }
   $('#seqList').innerHTML=rows.join('')||'<div class="note">点击地图上的营地圆点加入序列（再点一次取消）</div>';
   $('#seqList').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();seq.splice(+b.dataset.k,1);updateSeq();});
   $('#seqList').querySelectorAll('.seqrow').forEach(r=>r.onclick=()=>{
     showCamp(+r.dataset.i, document.querySelectorAll('#mapBox .dot')[+r.dataset.i]);
     document.getElementById('campCard').scrollIntoView({behavior:'smooth',block:'nearest'});
   });
-  document.querySelectorAll('#mapBox .dot').forEach((d,idx)=>d.classList.toggle('ins',seq.includes(idx)));
+  document.querySelectorAll('#mapBox .dot').forEach((d,idx)=>{
+    const k=seq.indexOf(idx);
+    d.classList.toggle('ins',k>=0);
+    if(k>=0)d.dataset.n=k+1;else delete d.dataset.n;
+  });
   const svg=document.querySelector('#mapBox svg');
   if(svg){
     let line=document.getElementById('seql');
