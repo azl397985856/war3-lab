@@ -295,7 +295,7 @@ let curMap=MAPDATA.maps[0].key;
 const pills=$('#mapPills');
 MAPDATA.maps.forEach(m=>{
   const b=document.createElement('button');b.textContent=m.name;b.dataset.k=m.key;
-  b.onclick=()=>{curMap=m.key;seq.length=0;renderMap();updateSeq();saveState();};
+  b.onclick=()=>{curMap=m.key;seq.length=0;curSel=-1;renderMap();updateSeq();saveState();};
   pills.appendChild(b);
 });
 function renderMap(){
@@ -303,8 +303,7 @@ function renderMap(){
   [...pills.children].forEach(b=>b.classList.toggle('on',b.dataset.k===curMap));
   const box=$('#mapBox');box.innerHTML='';
   const img=new Image();img.src=m.img;img.alt=m.name;box.appendChild(img);
-  img.onload=()=>{drawOverlay(m,box)};
-  // 先画（svg用百分比，无需等待）
+  // 标注基于百分比定位，无需等图；只画一次，避免抹掉序列状态
   drawOverlay(m,box);
   $('#mapMeta').textContent=m.name+' · 建议路线';
   const rr=$('#mapRoutes');rr.innerHTML='';
@@ -359,6 +358,7 @@ function drawOverlay(m,box){
     d.title=s.comp+(s.xp!=null?' · 基础'+s.xp:'');
     box.appendChild(d);
   });
+  updateSeq();
 }
 
 /* ---------- 练级序列（与地图联动） ---------- */
@@ -366,6 +366,7 @@ const need=[0,0,200,500,900,1400,2000,2700,3500,4400,5400];
 const fac={1:.8,2:.7,3:.6,4:.5};
 function lvOf(xp){for(let L=2;L<=10;L++){if(xp<need[L])return L-1+(xp-need[L-1])/(need[L]-need[L-1]);}return 10;}
 const seq=[];
+let curSel=-1;
 function curMapObj(){return MAPDATA.maps.find(x=>x.key===curMap)}
 /* 掉落等级池（1.27，代表物品；与手册 5.5 同源；第二个元素=Liquipedia 图标名） */
 const DROPS={
@@ -408,6 +409,7 @@ function dropsHtml(s){
   }).join(' ');
 }
 function showCamp(i,dot,msg){
+  curSel=i;
   const m=curMapObj(),s=m.spots[i];
   if(dot){document.querySelectorAll('#mapBox .dot').forEach(x=>x.classList.remove('sel'));dot.classList.add('sel');}
   const inSeq=seq.includes(i);
@@ -469,7 +471,7 @@ function updateSeq(){
   $('#seqResult').innerHTML=seq.length?`<div style="margin-top:10px">练完：<span class="big2">${lvOf(xp).toFixed(2)} 级</span>
     ${Math.floor(lvOf(xp))>=5?'<span class="badge">5级后野怪无经验</span>':''}</div>${extra}`:'';
 }
-$('#clearSeq').onclick=()=>{seq.length=0;updateSeq();};
+$('#clearSeq').onclick=()=>{seq.length=0;curSel=-1;updateSeq();};
 ['#heroLv','#heroPct','#tier'].forEach(s=>$(s).oninput=updateSeq);
 
 /* ---------- 克制矩阵 ---------- */
@@ -551,7 +553,7 @@ $('#campCard').addEventListener('click',e=>{
 });
 function saveState(){if(window.__restoring)return;try{localStorage.setItem('war3lab',JSON.stringify({
   tab:(document.querySelector('nav button.on')||{dataset:{}}).dataset.t||'maps',
-  map:curMap,race:curRace,seq:seq,
+  map:curMap,race:curRace,seq:seq,sel:curSel,
   hlv:$('#heroLv').value,pct:$('#heroPct').value,tier:$('#tier').value}));}catch(e){}}
 (function(){
   var S={};try{S=JSON.parse(localStorage.getItem('war3lab')||'{}')}catch(e){}
@@ -563,6 +565,7 @@ function saveState(){if(window.__restoring)return;try{localStorage.setItem('war3
   renderMap();renderTactic();renderManual('micro');
   if(S.seq){var m=curMapObj();seq.length=0;S.seq.forEach(function(i){if(i>=0&&i<m.spots.length)seq.push(i)});}
   updateSeq();
+  if(S.sel!=null&&S.sel>=0&&seq.indexOf(S.sel)>=0){showCamp(S.sel,document.querySelectorAll('#mapBox .dot')[S.sel]);}
   if(S.tab){var b=document.querySelector('nav button[data-t='+S.tab+']');
     if(b){window.__restoring=true;
       document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('on',x===b)});
