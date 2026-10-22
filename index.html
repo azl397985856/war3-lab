@@ -273,8 +273,10 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
   <div style="margin-top:4px;color:#6b7280">数据来源：Liquipedia / battle.net / wc3-gym / 实测笔记</div>
 </div>
 
-<script src="data.js"></script>
-<script src="content.js"></script>
+<script>
+document.write('<script src="data.js?v='+Date.now()+'"><\/script>');
+document.write('<script src="content.js?v='+Date.now()+'"><\/script>');
+</script>
 <script>
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const LVLNAME={easy:"绿点",medium:"黄点",hard:"红点"};
