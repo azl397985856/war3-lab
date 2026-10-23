@@ -117,6 +117,7 @@ def to_html(ls):
 
 TACTIC = ['### 4.1', '### 4.2', '### 4.3', '### 4.4', '### 4.5', '### 4.6']
 MICRO_ARTICLE = ['## 六、微操：让 APM 花在刀刃上']
+CREEP_PAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pages', 'creep.md')
 MICRO_PAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pages', 'micro.md')
 
 def build(prefixes):
@@ -145,9 +146,13 @@ def subfrags(prefix, race):
                     'html': to_html(ls[i + 1:end])})
     return res
 
+def page_frag(path, frag_id):
+    ls = open(path).read().split('\n')
+    return {'id': frag_id, 'title': strip_num(ls[0].lstrip('#').strip()), 'html': to_html(ls[1:])}
+
 micro = build(MICRO_ARTICLE)
-mlines = open(MICRO_PAGE).read().split('\n')
-micro.append({'id': 'ref', 'title': strip_num(mlines[0].lstrip('#').strip()), 'html': to_html(mlines[1:])})
+micro.append(page_frag(MICRO_PAGE, 'ref'))
+creep = [page_frag(CREEP_PAGE, 'creep')]
 t41 = build(['### 4.1'])[0]
 t46 = build(['### 4.6'])[0]
 content = {
@@ -159,6 +164,7 @@ content = {
         'ud': subfrags('### 4.5', 'ud'),
     },
     'micro': micro,
+    'creep': creep,
 }
 with open(OUT, 'w') as f:
     f.write('const CONTENT=')
