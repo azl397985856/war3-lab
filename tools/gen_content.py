@@ -38,6 +38,14 @@ def inline(t):
     t = re.sub(r'`([^`]+)`', r'<code>\1</code>', t)
     return t
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+def localize(h):
+    # 博客图床 URL → 站点本地资源（有本地副本的）
+    for name in os.listdir(os.path.join(HERE, '..', 'assets', 'war3')):
+        h = h.replace('https://lucifer.ren/blog/images/war3/' + name, 'assets/war3/' + name)
+    return h
+
 def to_html(ls):
     out = []
     i, n = 0, len(ls)
@@ -105,7 +113,7 @@ def to_html(ls):
         out.append('<p>' + inline(l.strip()) + '</p>')
         i += 1
     flush(ul, 'ul'); flush(ol, 'ol')
-    return '\n'.join(out)
+    return localize('\n'.join(out))
 
 TACTIC = ['### 4.1', '### 4.2', '### 4.3', '### 4.4', '### 4.5', '### 4.6']
 MICRO_ARTICLE = ['## 六、微操：让 APM 花在刀刃上']
