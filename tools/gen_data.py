@@ -17,7 +17,7 @@ L={"Forest Troll":2,"Forest Troll Trapper":3,"Forest Troll Berserker":4,"Forest 
 "Renegade Wizard":5,"Apprentice Wizard":1,"Rogue":3,"Rogue Wizard":3,"Rogue Wizard (creep)":3,"Brigand":2,"Enforcer":5,"Assassin":4,"Bandit Lord":7,
 "Timber Wolf":2,"Frost Wolf":2,"Dire Wolf":6,"Dire Frost Wolf":6,"Hydra Hatchling":3,"Hydra":6,"Elder Hydra":7,
 "Mammoth":3,"Icetusk Mammoth":5,"Dire Mammoth":8,"Mur'gul Snarecaster":4,"Mur'gul Tidewarrior":3,
-"Mur'gul Blood-Gill":2,"Mur'gul Marauder":6,"Red Dragon Whelp":3,"Red Drake":6,"Red Dragon":10,
+"Mur'gul Blood-Gill":2,"Mur'gul Marauder":6,"Red Dragon Whelp":3,"Red Drake":6,"Red Dragon":10,"Black Drake":6,"Sea Turtle Hatchling":1,
 "Sasquatch":5,"Elder Sasquatch":6,"Enraged Wildkin":6,"Wildkin":4,"Berserk Wildkin":8,
 "Spider Crab Limbripper":3,"Spider Crab Shorecrawler":1,"Spider Crab Behemoth":5,
 "Furbolg":4,"Furbolg Shaman":4,"Furbolg Tracker":6,"Furbolg Champion":7,"Furbolg Elder Shaman":7,
@@ -30,7 +30,7 @@ L={"Forest Troll":2,"Forest Troll Trapper":3,"Forest Troll Berserker":4,"Forest 
 BX={1:25,2:40,3:60,4:85,5:115,6:150,7:190,8:235,9:285,10:340}
 d=json.load(open(os.path.join(BLOG,'tools','war3-preview-data.json')))
 NAME={"ei":"Echo Isles","ch":"Concealed Hill","am":"Amazonia","tm":"Twisted Meadows","al":"Autumn Leaves",
-"st":"Springtime","hf":"HammerFall","th":"TideHunter3","ni":"Northern Isles","lr":"Last Refuge"}
+"st":"Springtime","hf":"HammerFall","th":"TideHunter3","ni":"Northern Isles","lr":"Last Refuge","tr2":"Turtle Rock 2","lt2":"Lost Temple 2"}
 src=open(os.path.join(BLOG,'tools','war3-figures.py')).read()
 routes={}
 for key in NAME:
