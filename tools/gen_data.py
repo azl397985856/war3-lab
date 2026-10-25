@@ -30,7 +30,7 @@ L={"Forest Troll":2,"Forest Troll Trapper":3,"Forest Troll Berserker":4,"Forest 
 BX={1:25,2:40,3:60,4:85,5:115,6:150,7:190,8:235,9:285,10:340}
 d=json.load(open(os.path.join(BLOG,'tools','war3-preview-data.json')))
 NAME={"ei":"Echo Isles","ch":"Concealed Hill","am":"Amazonia","tm":"Twisted Meadows","al":"Autumn Leaves",
-"st":"Springtime","hf":"HammerFall","th":"TideHunter3","ni":"Northern Isles","lr":"Last Refuge","tr2":"Turtle Rock 2","lt2":"Lost Temple 2"}
+"st":"Springtime","hf":"HammerFall","th":"TideHunter3","ni":"Northern Isles","lr":"Last Refuge","tr2":"Turtle Rock","lt2":"Lost Temple"}
 src=open(os.path.join(BLOG,'tools','war3-figures.py')).read()
 routes={}
 for key in NAME:
