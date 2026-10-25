@@ -34,7 +34,7 @@ NAME={"ei":"Echo Isles","ch":"Concealed Hill","am":"Amazonia","tm":"Twisted Mead
 src=open(os.path.join(BLOG,'tools','war3-figures.py')).read()
 routes={}
 for key in NAME:
-    m=re.search(r'draw_data\("%s",.*?routes=\[(.*?)\]\s*,\s*\n\s*note='%key, src, re.S)
+    m=re.search(r'draw_data\("%s",.*?routes=\[(.*?)\],\s*(?:legend_loc="[^"]*",\s*)*note='%key, src, re.S)
     if not m: continue
     pts=[]
     for rm in re.finditer(r'\[([\d\.,\s()]+?)\],\s*(\w+),\s*"[^"]*",\s*\n?\s*"([^"]*)"', m.group(1)):

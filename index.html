@@ -349,6 +349,7 @@ const COLOR={easy:"#1fa06b",medium:"#e8a13a",hard:"#e8554e"};
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+  if(location.hash)history.replaceState(null,'',location.pathname+location.search); // 手动切页清锚点，刷新不再被旧 hash 拉走
   saveState();
 });
 
@@ -387,12 +388,24 @@ function drawOverlay(m,box){
     pl.setAttribute('fill','none');pl.setAttribute('stroke',r.style==='C'?'#e8554e':'#e8a13a');
     pl.setAttribute('stroke-width','.6');pl.setAttribute('stroke-dasharray',r.style==='B'?'2 1.4':'none');
     pl.setAttribute('marker-end','url(#arrw)');svg.appendChild(pl);
-    r.path.forEach((p,i)=>{
+  });
+  /* 徽章：出生点不编号；路线首点=上一条末点视为延伸链（跳过衔接点续号），否则重新编号（替代路线） */
+  const spawns=(m.objects||[]).filter(o=>o.type==='spawn').map(o=>[o.x,o.y]);
+  const nearPt=(a,b)=>Math.abs(a[0]-b[0])<0.02&&Math.abs(a[1]-b[1])<0.02;
+  let n=0,prevTail=null;
+  (m.routes||[]).forEach(r=>{
+    let start=0;
+    if(prevTail&&r.path.length&&nearPt(r.path[0],prevTail)){start=1;} else {n=0;}
+    for(let i=start;i<r.path.length;i++){
+      const p=r.path[i];
+      if(spawns.some(s=>Math.abs(p[0]-s[0])<0.008&&Math.abs(p[1]-s[1])<0.008))continue; // 出生点跳过用严阈值，别误杀贴家营地
+      n++;
       const t=document.createElementNS('http://www.w3.org/2000/svg','text');
       t.setAttribute('x',p[0]*100);t.setAttribute('y',p[1]*100-1.6);
       t.setAttribute('font-size','2.6');t.setAttribute('fill','#ffd23f');t.setAttribute('font-weight','700');
-      t.setAttribute('text-anchor','middle');t.textContent='①②③④⑤'[i]||i+1;svg.appendChild(t);
-    });
+      t.setAttribute('text-anchor','middle');t.textContent='①②③④⑤⑥⑦'[n-1]||n;svg.appendChild(t);
+    }
+    prevTail=r.path[r.path.length-1];
   });
   const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
   defs.innerHTML='<marker id="arrw" markerWidth="4" markerHeight="4" refX="2.4" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="#e8554e"/></marker>';
