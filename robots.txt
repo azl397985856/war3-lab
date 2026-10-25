@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lucifer.ren/war3-lab/sitemap.xml
