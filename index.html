@@ -156,6 +156,24 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
 .dpop .col b{display:block;color:var(--sub);font-size:11.5px;margin-bottom:4px;font-weight:600}
 .dpop .col span{display:block;font-size:12.5px;padding:1.5px 0;color:var(--ink)}
 .big2{font-size:19px;color:var(--gold);font-weight:700}
+/* ---------- 复盘 tab ---------- */
+#coachDrop{border:2px dashed var(--line);border-radius:10px;text-align:center;padding:26px;color:var(--sub);cursor:pointer;transition:.15s}
+#coachDrop.over{border-color:var(--gold);color:var(--gold)}
+.cstat{display:flex;gap:26px;align-items:baseline;flex-wrap:wrap}
+.cstat .n{font-size:34px;color:var(--gold);font-weight:800}
+.cstat .lab{color:var(--sub);font-size:12.5px}
+.cbar{display:flex;align-items:center;gap:8px;margin:5px 0}
+.cbar .t{width:96px;color:var(--sub);font-size:12.5px}
+.cbar .bar{flex:1;height:12px;background:#2a2b33;border-radius:6px;overflow:hidden}
+.cbar .bar i{display:block;height:100%;background:var(--gold)}
+.cbar .v{width:110px;font-size:12.5px;text-align:right}
+table.clist{width:100%;border-collapse:collapse;font-size:13px}
+table.clist td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.clist tr.gm{cursor:pointer}
+table.clist tr.gm:hover{background:var(--panel2)}
+table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
+.w{color:var(--green);font-weight:700}.l{color:var(--red);font-weight:700}.u{color:var(--sub)}
+#coachMe{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 8px}
 </style>
 </head>
 <body>
@@ -167,6 +185,7 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
     <button data-t="micro">微操</button>
     <button data-t="matrix">攻防克制</button>
     <button data-t="ref">数据速查</button>
+    <button data-t="coach">复盘</button>
     <button data-t="dl">下载资源</button>
     <button data-t="about">关于我</button>
   </nav>
@@ -325,6 +344,39 @@ button.ghost:hover{color:var(--gold);border-color:var(--goldline)}
     <tr><td>买装优先级</td><td>剑圣先头环/鞋 → 无敌400刚需 → 群补见者有份 → TP常备</td></tr>
   </table></div>
   <div class="note" style="margin-top:18px">完整攻略见博客《让魔兽再次伟大》：<a href="https://lucifer.ren/blog/2025/03/20/war3-website/" target="_blank">lucifer.ren/blog/2025/03/20/war3-website/</a></div>
+</section>
+
+<!-- ============ 复盘（纯前端导入, 数据不出本机） ============ -->
+<section id="coach">
+  <h2 class="sec">对局复盘</h2>
+  <div class="note">私人数据 · 纯本地：导入 war3-coach 工具生成的 <b>opponents.json</b>（工具目录 app/data/ 下，或带回 zip 里的 state/opponents.json）。
+  数据只存在本浏览器 localStorage，<b>不上传任何服务器</b>；换浏览器或清缓存前先「导出备份」。</div>
+  <div id="coachDrop" style="margin-top:12px">点击选择 或 拖入 opponents.json / war3-coach 导出文件<br>
+    <span style="font-size:12px">重复导入自动去重合并，可累积多个日期的文件</span></div>
+  <input type="file" id="coachFile" accept=".json" style="display:none">
+  <div id="coachEmpty" class="note" style="margin-top:14px">还没有数据。打完天梯用 war3-coach 收集，把 json 带回来拖到这里。</div>
+
+  <div id="coachBody" style="display:none">
+    <div class="grid" style="margin-top:16px">
+      <div class="card">
+        <div class="cstat">
+          <div><div class="n" id="csTotal">0</div><div class="lab">总场次</div></div>
+          <div><div class="n" id="csWinrate">-</div><div class="lab">总胜率</div></div>
+          <div><div class="n" id="csStreak" style="font-size:20px">-</div><div class="lab">最近 15 局</div></div>
+        </div>
+        <div style="margin-top:10px" class="note">我是 <input id="coachMe" size="12" placeholder="我的KK ID">（判定胜负归属，自动推断可改）</div>
+      </div>
+      <div class="card" id="csByRace"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="coachQ" placeholder="按对手 ID 过滤…" style="flex:1;min-width:160px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 10px">
+        <button class="ghost" id="coachExport">导出备份</button>
+        <button class="ghost" id="coachClear" style="color:var(--red)">清空</button>
+      </div>
+      <div style="overflow-x:auto;margin-top:8px"><table class="clist" id="coachList"></table></div>
+    </div>
+  </div>
 </section>
 
 </div>
@@ -658,6 +710,160 @@ function saveState(){if(window.__restoring)return;try{localStorage.setItem('war3
   window.__restoring=false;
   gotoHash();
 })();
+/* ---------- 复盘（纯本地, 数据不出浏览器） ---------- */
+const CKEY='war3lab-coach';
+const RACECN={orc:'兽族',human:'人族',undead:'UD',nightelf:'NE',random:'随机'};
+let coachGames=[],coachMe='';
+function coachLoad(){
+  try{coachGames=JSON.parse(localStorage.getItem(CKEY)||'[]')}catch(e){coachGames=[]}
+  if(!Array.isArray(coachGames))coachGames=[];
+  coachMe=localStorage.getItem(CKEY+'-me')||'';
+  $('#coachMe').value=coachMe;
+}
+function coachSave(){
+  try{localStorage.setItem(CKEY,JSON.stringify(coachGames));
+  if(coachMe)localStorage.setItem(CKEY+'-me',coachMe);}catch(e){}
+}
+function gkey(g){return (g.ts||0)+'|'+(g.file||'')+'|'+(g.players||[]).map(p=>p.name).sort().join(',')}
+function coachMerge(games){
+  const seen=new Set(coachGames.map(gkey));let n=0;
+  (games||[]).forEach(g=>{
+    if(g&&Array.isArray(g.players)&&g.players.length){const k=gkey(g);
+      if(!seen.has(k)){coachGames.push(g);seen.add(k);n++;}}
+  });
+  coachGames.sort((a,b)=>(a.ts||0)-(b.ts||0));
+  return n;
+}
+/* 兼容三种文件: opponents.json{games} / 纯数组 / 单局analysis{meta,players} */
+function coachParse(obj,fname,lastMod){
+  if(Array.isArray(obj))return obj;
+  if(obj&&Array.isArray(obj.games))return obj.games;
+  if(obj&&obj.meta&&obj.players){ // 单局 analysis JSON -> 一条 game 记录
+    const players=Object.keys(obj.players).map(pid=>{
+      const p=obj.players[pid];
+      return {name:p.name,race:p.race,apm:p.apm_total||p.apm,tech:p.tech||{},
+              heroes:(p.heroes||[]).map(h=>h.cn||h.id),
+              bo_summary:(p.bo||[]).filter(e=>['build','tech','hero'].indexOf(e['kind'])>=0&&e.t<=360)
+                .slice(0,8).map(e=>Math.floor(e.t/60)+':'+('0'+Math.floor(e.t%60)).slice(-2)+' '+e.cn).join(' -> ')};
+    });
+    return [{file:fname||'analysis.json',map:(obj.meta.map||'').split('\\').pop(),
+             ts:Math.floor((lastMod||Date.now())/1000),length_s:obj.meta.length_s||0,
+             date:'',players:players}];
+  }
+  return [];
+}
+function inferMe(){
+  const c={};
+  coachGames.forEach(g=>(g.players||[]).forEach(p=>{if(p.result)c[p.name]=(c[p.name]||0)+1}));
+  let best='',n=0;for(const k in c)if(c[k]>n){n=c[k];best=k}
+  return best;
+}
+function myGame(g){return (g.players||[]).find(p=>p.name===coachMe&&p.result)
+  ||(g.players||[]).find(p=>p.result)||null}
+function oppGame(g){const m=myGame(g);
+  return (g.players||[]).find(p=>p!==m&&p.name!==(m||{}).name)||null}
+function renderCoach(){
+  const has=coachGames.length>0;
+  $('#coachEmpty').style.display=has?'none':'';
+  $('#coachBody').style.display=has?'':'none';
+  if(!has)return;
+  if(!coachMe){coachMe=inferMe();$('#coachMe').value=coachMe;}
+  let wins=0,decided=0;
+  const byRace={};
+  const streak=[];
+  coachGames.forEach(g=>{
+    const m=myGame(g);if(!m)return;
+    const won=m.result==='win';
+    if(m.result){decided++;if(won)wins++;streak.push(won);}
+    const o=oppGame(g);const r=(o&&o.race)||'?';
+    byRace[r]=byRace[r]||[0,0];byRace[r][0]+=won?1:0;byRace[r][1]++;
+  });
+  $('#csTotal').textContent=decided+(coachGames.length!==decided?' (+'+(coachGames.length-decided)+'未知)':'');
+  $('#csWinrate').textContent=decided?Math.round(wins/decided*100)+'%':'-';
+  $('#csStreak').textContent=streak.slice(-15).map(x=>x?'✓':'✗').join('')||'-';
+  const order=['undead','human','nightelf','orc','random'];
+  const bars=Object.keys(byRace).sort((a,b)=>order.indexOf(a)-order.indexOf(b)).map(r=>{
+    const [w,t]=byRace[r],pct=t?Math.round(w/t*100):0;
+    return `<div class="cbar"><span class="t">vs ${RACECN[r]||r}</span>`
+      +`<div class="bar"><i style="width:${t?pct:0}%"></i></div>`
+      +`<span class="v">${w}胜${t-w}负 (${pct}%)</span></div>`;
+  });
+  $('#csByRace').innerHTML='<h3>对各族胜率</h3>'+(bars.join('')||'<div class="note">暂无已判定胜负的局</div>');
+  renderCoachList();
+}
+function renderCoachList(){
+  const q=($('#coachQ').value||'').toLowerCase();
+  const rows=[];
+  coachGames.slice().reverse().forEach((g,ri)=>{
+    const m=myGame(g),o=oppGame(g);
+    const oname=(o&&o.name)||'?';
+    if(q&&oname.toLowerCase().indexOf(q)<0)return;
+    const res=m&&m.result==='win'?'<span class="w">胜</span>':
+             (m&&m.result==='loss'?'<span class="l">负</span>':'<span class="u">?</span>');
+    const heroes=(o&&o.heroes&&o.heroes.length)?o.heroes.join('→'):'';
+    const gi=coachGames.length-1-ri;   // 原始索引, 详情行定位用
+    rows.push(`<tr class="gm" data-gi="${gi}">`
+      +`<td>${(g.date||(g.ts?new Date(g.ts*1000).toLocaleString('zh-CN',{hour12:false}):'')).replace(/^\d{4}-/,'')}</td>`
+      +`<td>${g.map||'?'}</td>`
+      +`<td>${RACECN[m&&m.race]||(m&&m.race)||'?'}</td>`
+      +`<td>vs <b>${oname}</b><span class="u">(${RACECN[o&&o.race]||(o&&o.race)||'?'})</span></td>`
+      +`<td>${res}</td>`
+      +`<td class="u">${heroes}</td></tr>`);
+  });
+  $('#coachList').innerHTML='<tr><th>时间</th><th>地图</th><th>我方</th><th>对手</th><th>胜负</th><th>对手英雄</th></tr>'
+    +(rows.join('')||'<tr><td colspan="6" class="u">无匹配</td></tr>');
+}
+$('#coachList').addEventListener('click',e=>{
+  const tr=e.target.closest('tr.gm');if(!tr)return;
+  const det=tr.nextElementSibling;
+  if(det&&det.classList.contains('det')){det.remove();return;}
+  const g=coachGames[+tr.dataset.gi];
+  if(!g)return;
+  const m=myGame(g),o=oppGame(g);
+  const T2CN={tier2:'二本',tier3:'三本'};
+  const techStr=t=>Object.entries(t||{}).map(([k,v])=>(T2CN[k]||k)+' '+Math.floor(v/60)+':'+('0'+Math.floor(v%60)).slice(-2)).join(', ')||'—';
+  const d=document.createElement('tr');d.className='det';
+  d.innerHTML=`<td colspan="6">`
+    +`<div>我方英雄: ${(m&&m.heroes||[]).join('→')||'—'} ｜ 我方升本: ${techStr(m&&m.tech)} ｜ APM: ${(m&&m.apm)||'—'}</div>`
+    +`<div>对手升本: ${techStr(o&&o.tech)} ｜ 对手 APM: ${(o&&o.apm)||'—'}</div>`
+    +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div></td>`;
+  tr.after(d);
+});
+function coachImportFile(f){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let games=[];
+    try{games=coachParse(JSON.parse(rd.result),f.name,f.lastModified)}catch(e){alert('JSON 解析失败: '+e.message);return;}
+    if(!games.length){alert('没认出有效数据（支持 opponents.json / 导出备份 / 单局 analysis.json）');return;}
+    const n=coachMerge(games);
+    if(!coachMe)coachMe=inferMe();
+    $('#coachMe').value=coachMe;
+    coachSave();renderCoach();
+    alert('导入完成: 新增 '+n+' 局 (重复跳过 '+(games.length-n)+' 局)，当前共 '+coachGames.length+' 局');
+  };
+  rd.readAsText(f);
+}
+$('#coachDrop').onclick=()=>$('#coachFile').click();
+$('#coachFile').onchange=e=>{if(e.target.files[0])coachImportFile(e.target.files[0]);e.target.value='';};
+['dragover','dragleave','drop'].forEach(ev=>$('#coachDrop').addEventListener(ev,e=>{
+  e.preventDefault();
+  $('#coachDrop').classList.toggle('over',ev.type==='dragover');
+  if(ev.type==='drop'&&e.dataTransfer.files[0])coachImportFile(e.dataTransfer.files[0]);
+}));
+$('#coachQ').addEventListener('input',renderCoachList);
+$('#coachMe').addEventListener('change',e=>{coachMe=e.target.value.trim();coachSave();renderCoach();});
+$('#coachExport').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({version:1,exported:new Date().toISOString(),games:coachGames},null,1)],{type:'application/json'}));
+  a.download='war3-coach-export-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+};
+$('#coachClear').onclick=()=>{
+  if(confirm('确定清空本浏览器的全部复盘数据？(不影响你工具目录里的 opponents.json)')){
+    coachGames=[];coachSave();renderCoach();
+  }
+};
+coachLoad();renderCoach();
 function gotoHash(){
   var h=(location.hash||'').slice(1); if(!h)return;
   var el=document.getElementById(h);
