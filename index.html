@@ -354,9 +354,8 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
   <div id="coachDrop" style="margin-top:12px">点击选择 或 拖入 opponents.json / war3-coach 导出文件<br>
     <span style="font-size:12px">重复导入自动去重合并，可累积多个日期的文件</span></div>
   <input type="file" id="coachFile" accept=".json" style="display:none">
-  <div id="coachEmpty" class="note" style="margin-top:14px">还没有数据。打完天梯用 war3-coach 收集，把 json 带回来拖到这里。</div>
 
-  <div id="coachBody" style="display:none">
+  <div id="coachBody">
     <div class="grid" style="margin-top:16px">
       <div class="card">
         <div class="cstat">
@@ -763,10 +762,20 @@ function myGame(g){return (g.players||[]).find(p=>p.name===coachMe&&p.result)
 function oppGame(g){const m=myGame(g);
   return (g.players||[]).find(p=>p!==m&&p.name!==(m||{}).name)||null}
 function renderCoach(){
-  const has=coachGames.length>0;
-  $('#coachEmpty').style.display=has?'none':'';
-  $('#coachBody').style.display=has?'':'none';
-  if(!has)return;
+  if(!coachGames.length){
+    /* 空状态: 骨架照常展示, 数值用 -- 占位, 让访客看得出导入后有什么 */
+    $('#csTotal').textContent='--';
+    $('#csWinrate').textContent='--';
+    $('#csStreak').textContent='--';
+    const order=['undead','human','nightelf','orc','random'];
+    $('#csByRace').innerHTML='<h3>对各族胜率</h3>'+order.map(r=>
+      `<div class="cbar"><span class="t">vs ${RACECN[r]}</span>`
+      +'<div class="bar"><i style="width:0%"></i></div>'
+      +'<span class="v">--</span></div>').join('');
+    $('#coachList').innerHTML='<tr><th>时间</th><th>地图</th><th>我方</th><th>对手</th><th>胜负</th><th>对手英雄</th></tr>'
+      +'<tr><td colspan="6" class="u" style="text-align:center;padding:18px 0">--  导入数据后，每一局会列在这里；点任意一行展开双方升本/APM/对手开局 --</td></tr>';
+    return;
+  }
   if(!coachMe){coachMe=inferMe();$('#coachMe').value=coachMe;}
   let wins=0,decided=0;
   const byRace={};
@@ -853,6 +862,7 @@ $('#coachFile').onchange=e=>{if(e.target.files[0])coachImportFile(e.target.files
 $('#coachQ').addEventListener('input',renderCoachList);
 $('#coachMe').addEventListener('change',e=>{coachMe=e.target.value.trim();coachSave();renderCoach();});
 $('#coachExport').onclick=()=>{
+  if(!coachGames.length){alert('还没有数据，先导入 opponents.json');return;}
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify({version:1,exported:new Date().toISOString(),games:coachGames},null,1)],{type:'application/json'}));
   a.download='war3-coach-export-'+new Date().toISOString().slice(0,10)+'.json';
