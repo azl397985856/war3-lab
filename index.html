@@ -363,7 +363,7 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
           <div><div class="n" id="csWinrate">-</div><div class="lab">总胜率</div></div>
           <div><div class="n" id="csStreak" style="font-size:20px">-</div><div class="lab">最近 15 局</div></div>
         </div>
-        <div style="margin-top:10px" class="note">我是 <input id="coachMe" size="12" placeholder="我的KK ID">（判定胜负归属，自动推断可改）</div>
+        <div style="margin-top:10px" class="note">我是 <select id="coachMe"></select><span class="note">（判定胜负归属；对手库里记了「我是谁」会自动选中）</span></div>
       </div>
       <div class="card" id="csByRace"></div>
     </div>
@@ -753,9 +753,20 @@ function coachParse(obj,fname,lastMod){
 }
 function inferMe(){
   const c={};
+  /* 第一优先: 库里记录的 me 字段 (录入时的归属, 最可靠) */
+  coachGames.forEach(g=>{if(g.me)c[g.me]=(c[g.me]||0)+100});
+  /* 兜底: 胜负 result 出现次数 (单局时不可靠, 仅旧数据用) */
   coachGames.forEach(g=>(g.players||[]).forEach(p=>{if(p.result)c[p.name]=(c[p.name]||0)+1}));
   let best='',n=0;for(const k in c)if(c[k]>n){n=c[k];best=k}
   return best;
+}
+function renderMeSelect(){
+  const names=new Set();
+  coachGames.forEach(g=>(g.players||[]).forEach(p=>names.add(p.name)));
+  if(coachMe)names.add(coachMe);
+  const sel=$('#coachMe');
+  sel.innerHTML=[...names].sort().map(n=>'<option'+(n===coachMe?' selected':'')+'>'+n+'</option>').join('')
+    ||'<option value="">--</option>';
 }
 function myGame(g){return (g.players||[]).find(p=>p.name===coachMe&&p.result)
   ||(g.players||[]).find(p=>p.result)||null}
@@ -776,7 +787,7 @@ function renderCoach(){
       +'<tr><td colspan="6" class="u" style="text-align:center;padding:18px 0">--  导入数据后，每一局会列在这里；点任意一行展开双方升本/APM/对手开局 --</td></tr>';
     return;
   }
-  if(!coachMe){coachMe=inferMe();$('#coachMe').value=coachMe;}
+  if(!coachMe){coachMe=inferMe();}
   let wins=0,decided=0;
   const byRace={};
   const streak=[];
@@ -798,6 +809,7 @@ function renderCoach(){
       +`<span class="v">${w}胜${t-w}负 (${pct}%)</span></div>`;
   });
   $('#csByRace').innerHTML='<h3>对各族胜率</h3>'+(bars.join('')||'<div class="note">暂无已判定胜负的局</div>');
+  renderMeSelect();
   renderCoachList();
 }
 function renderCoachList(){
@@ -832,10 +844,17 @@ $('#coachList').addEventListener('click',e=>{
   const T2CN={tier2:'二本',tier3:'三本'};
   const techStr=t=>Object.entries(t||{}).map(([k,v])=>(T2CN[k]||k)+' '+Math.floor(v/60)+':'+('0'+Math.floor(v%60)).slice(-2)).join(', ')||'—';
   const d=document.createElement('tr');d.className='det';
+  const coach=(g.coach||[]).map(c=>{
+    const ic={good:'✓',warn:'!',info:'·'}[c.level]||'·';
+    return `<div style="margin:3px 0"><b style="color:var(--gold)">[${ic}] ${c.title}</b><br><span class="u">${c.body}</span></div>`;
+  }).join('');
   d.innerHTML=`<td colspan="6">`
     +`<div>我方英雄: ${(m&&m.heroes||[]).join('→')||'—'} ｜ 我方升本: ${techStr(m&&m.tech)} ｜ APM: ${(m&&m.apm)||'—'}</div>`
     +`<div>对手升本: ${techStr(o&&o.tech)} ｜ 对手 APM: ${(o&&o.apm)||'—'}</div>`
-    +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div></td>`;
+    +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div>`
+    +(coach?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>教练点评</b>${coach}</div>`
+           :'<div class="u" style="margin-top:4px">教练点评: 本记录为旧格式，重新收集后自动带上</div>')
+    +`</td>`;
   tr.after(d);
 });
 function coachImportFile(f){
