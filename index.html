@@ -844,7 +844,9 @@ $('#coachList').addEventListener('click',e=>{
   const T2CN={tier2:'二本',tier3:'三本'};
   const techStr=t=>Object.entries(t||{}).map(([k,v])=>(T2CN[k]||k)+' '+Math.floor(v/60)+':'+('0'+Math.floor(v%60)).slice(-2)).join(', ')||'—';
   const d=document.createElement('tr');d.className='det';
-  const coach=(g.coach||[]).map(c=>{
+  const coachList = g.coach_v2 ? (g.coach_v2[coachMe] || [])
+                : (Array.isArray(g.coach) ? g.coach : []);
+  const coach=coachList.map(c=>{
     const ic={good:'✓',warn:'!',info:'·'}[c.level]||'·';
     return `<div style="margin:3px 0"><b style="color:var(--gold)">[${ic}] ${c.title}</b><br><span class="u">${c.body}</span></div>`;
   }).join('');
@@ -853,7 +855,7 @@ $('#coachList').addEventListener('click',e=>{
     +`<div>对手升本: ${techStr(o&&o.tech)} ｜ 对手 APM: ${(o&&o.apm)||'—'}</div>`
     +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div>`
     +(coach?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>教练点评</b>${coach}</div>`
-           :'<div class="u" style="margin-top:4px">教练点评: 本记录为旧格式，重新收集后自动带上</div>')
+           :'<div class="u" style="margin-top:4px">本记录暂无该视角的点评 (旧格式只有录入者视角，重新收集后自动补全)</div>')
     +`</td>`;
   tr.after(d);
 });
