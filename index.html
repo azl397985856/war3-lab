@@ -181,6 +181,7 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
   <h1>WAR3 训练营<small>兽族冲榜数据实验室 · 数据源 Liquipedia Preview / battle.net，与《让魔兽再次伟大》手册同源</small></h1>
   <nav>
     <button data-t="maps" class="on">练级地图</button>
+    <button data-t="quick">赛前速查</button>
     <button data-t="tactic">战术手册</button>
     <button data-t="micro">微操</button>
     <button data-t="matrix">攻防克制</button>
@@ -222,6 +223,14 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
     </div>
   </div>
   <div class="mbody" id="creepExtra" style="margin-top:26px"></div>
+</section>
+
+<!-- ============ 赛前速查 (30 秒决策卡) ============ -->
+<section id="quick">
+  <h2 class="sec">选人界面 30 秒</h2>
+  <div class="note">数据来自手册 4.2「首发与开局决策表」+ 2.2 图池 ban 建议。选对手种族即可；打天梯时手机开这一页。</div>
+  <div class="pills" id="quickRace"></div>
+  <div id="quickBody" style="margin-top:12px"></div>
 </section>
 
 <!-- ============ 战术手册 ============ -->
@@ -367,6 +376,8 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
       </div>
       <div class="card" id="csByRace"></div>
     </div>
+    <div class="card" style="margin-top:14px"><h3>成长趋势 <span class="note">断档↓好 · 等级↑好 · 升本↑晚=慢 · 每局环比</span></h3><div id="ctrend" class="note">暂无带训练指标的对局 (新版本收集的数据自动带)</div></div>
+    <div class="card" style="margin-top:14px"><h3>输因分布 <span class="note">展开对局详情, 在里面打输因标签</span></h3><div id="ctags" class="note">还没有标签</div></div>
     <div class="card" style="margin-top:14px">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <input id="coachQ" placeholder="按对手 ID 过滤…" style="flex:1;min-width:160px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 10px">
@@ -818,6 +829,8 @@ function renderCoach(){
   $('#csByRace').innerHTML='<h3>对各族胜率</h3>'+(bars.join('')||'<div class="note">暂无已判定胜负的局</div>');
   renderMeSelect();
   renderCoachList();
+  renderTrend();
+  renderTagSum();
 }
 function renderCoachList(){
   const q=($('#coachQ').value||'').toLowerCase();
@@ -863,7 +876,12 @@ $('#coachList').addEventListener('click',e=>{
     +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div>`
     +(coach?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>教练点评</b>${coach}</div>`
            :'<div class="u" style="margin-top:4px">本记录暂无该视角的点评 (旧格式只有录入者视角，重新收集后自动补全)</div>')
-    +`</td>`;
+    +`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>输因 / 教训标注</b> <span class="u">(点选, 再点取消; 存本机)</span><div style="margin-top:4px">`
+    +TAGSLIST.map(t=>{
+        const on=(coachTags[gkey(g)]||[]).indexOf(t)>=0;
+        return `<span class="tag" data-tag="${t}" style="cursor:pointer;${on?'background:var(--gold);color:#141418':'background:#2a2b33;color:var(--sub)'};margin:2px">${t}</span>`;
+      }).join('')
+    +`</div></div></td>`;
   tr.after(d);
 });
 function coachImportFile(f){
@@ -907,6 +925,110 @@ $('#coachClear').onclick=()=>{
     coachGames=[];coachSave();renderCoach();
   }
 };
+/* ---------- 输因标注 ---------- */
+const TAGSKEY='war3lab-coach-tags';
+const TAGSLIST=['运营断档','被骚扰崩','团战操作','意识被抓','英雄打法','心态','微操细节','其他'];
+let coachTags={};
+try{coachTags=JSON.parse(localStorage.getItem(TAGSKEY)||'{}')}catch(e){coachTags={}}
+function renderTagSum(){
+  const c={};let tagged=0;
+  coachGames.forEach(g=>{
+    const m=myGame(g);
+    if(m&&m.result==='loss'){
+      const tags=coachTags[gkey(g)]||[];
+      tags.forEach(t=>c[t]=(c[t]||0)+1);tagged+=tags.length?1:0;
+    }
+  });
+  const ks=Object.keys(c).sort((a,b)=>c[b]-c[a]);
+  $('#ctags').innerHTML = ks.length
+    ? ('已标注 '+tagged+' 局败局。<div style="margin-top:6px">'+ks.map(t=>{
+        const mx=Math.max.apply(null,ks.map(k=>c[k]));
+        return `<div class="cbar"><span class="t">${t}</span><div class="bar"><i style="width:${Math.round(c[t]/mx*100)}%"></i></div><span class="v">${c[t]} 局</span></div>`;
+      }).join('')+'</div>'
+      +'<div class="note" style="margin-top:6px">出现最多的输因 = 你的模式性弱点，针对性练它。</div>')
+    : '还没有标签。展开任意败局的详情打标签，积累到 10 局以上就能看出模式。';
+}
+$('#coachList').addEventListener('click',e=>{
+  const sp=e.target.closest('.tag[data-tag]');
+  if(!sp)return;
+  const tr=sp.closest('tr.det').previousElementSibling;
+  const g=coachGames[+tr.dataset.gi];if(!g)return;
+  const k=gkey(g);coachTags[k]=coachTags[k]||[];
+  const i=coachTags[k].indexOf(sp.dataset.tag);
+  if(i>=0)coachTags[k].splice(i,1);else coachTags[k].push(sp.dataset.tag);
+  localStorage.setItem(TAGSKEY,JSON.stringify(coachTags));
+  renderCoachList();renderTagSum();
+  // 保持详情展开
+  const tr2=document.querySelector('#coachList tr.gm[data-gi="'+tr.dataset.gi+'"]');
+  if(tr2)tr2.click();
+});
+
+/* ---------- 成长趋势 ---------- */
+function spark(vals,w,h,goodDown){
+  const n=vals.length;if(n<1)return'';
+  const mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals);
+  const rng=(mx-mn)||1;
+  const pts=vals.map((v,i)=>[(i/(n-1||1))*(w-4)+2, h-4-((v-mn)/rng)*(h-10)].map(x=>x.toFixed(1)).join(',')).join(' ');
+  const last=vals[n-1],prev=vals[n-2];
+  let delta='';
+  if(prev!=null){
+    const d=last-prev, better=goodDown?d<0:d>0, same=d===0;
+    delta=` <span style="color:${same?'var(--sub)':better?'var(--green)':'var(--red)'}">${same?'—':(d>0?'+':'')+Math.round(d*10)/10}</span>`;
+  }
+  return `<svg width="${w}" height="${h}" style="vertical-align:middle"><polyline points="${pts}" fill="none" stroke="var(--gold)" stroke-width="2"/></svg>${delta}`;
+}
+function renderTrend(){
+  const ms=coachGames.filter(g=>g.metrics).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  if(ms.length<1){$('#ctrend').innerHTML='暂无带训练指标的对局 (新版本收集的数据自动带)';return;}
+  const f=t=>t?Math.floor(t/60)+':'+('0'+Math.floor(t%60)).slice(-2):'—';
+  const row=(label,vals,fmt,goodDown)=>{
+    const svg=spark(vals.map(v=>v==null?0:v),150,34,goodDown);
+    const last=vals[vals.length-1];
+    return `<div class="cbar"><span class="t" style="width:110px">${label}</span><span style="flex:0 0 160px">${svg}</span><span class="v" style="flex:1;text-align:left">${fmt(last)}</span></div>`;
+  };
+  const gaps=ms.map(g=>g.metrics.gap_s==null?null:g.metrics.gap_s);
+  const lvls=ms.map(g=>g.metrics.lvl10==null?null:g.metrics.lvl10);
+  const t2s=ms.map(g=>g.metrics.t2==null?null:g.metrics.t2);
+  const apms=ms.map(g=>g.metrics.apm==null?null:g.metrics.apm);
+  $('#ctrend').innerHTML =
+    row('农民断档(秒)',gaps,v=>v+' 秒',true)
+    +row('10分钟英雄等级',lvls,v=>'Lv '+v,false)
+    +row('升二本时点',t2s,f,false)
+    +row('总APM',apms,v=>Math.round(v),false)
+    +`<div class="note" style="margin-top:6px">${ms.length} 局。断档是唯一要刻意压到 0 的指标；等级/APM 是结果，别硬刷。</div>`;
+}
+
+/* ---------- 赛前速查 ---------- */
+const QUICK={
+ hum:{race:'人族 HUM',hero:'先知',why:'比剑圣抗 TR，骚扰练级两用',open:'先知猎头最稳；万金油次之（先知首发、商店延后）',second:'TC（抓开矿直接冲）或熊猫（对速矿）',ban:'保 AM/NI/LR/TH——它们恰是 HUM 速矿好图，反速矿剧本要熟；ban TM'},
+ ne:{race:'暗夜 NE',hero:'剑圣',why:'偷宝 + 买粉骚扰',open:'万金油（商店跟着英雄走）；对 KotG 女猎海转大 G+萨满',second:'跟对面阵容走：骚扰型→小 Y，KotG→TC',ban:'怕 NE 时第二 ban AL；CH/EI 主战场；控制商店别让对面白买无敌群补'},
+ ud:{race:'不死 UD',hero:'剑圣带电球',why:'先知 C 不了毁灭、狼会被驱',open:'先知猎头也是一线（二本分矿或三本）；兽栏先科多+狼骑，白牛等女妖上场再补',second:'TC（晕 DK 断加血）',ban:'对 UD 优先保 AM（分矿无尸体）；科技蜘蛛/甲虫蜘蛛局抢前期'},
+ orc:{race:'镜像 ORC',hero:'剑圣',why:'练级优先于骚扰',open:'双地洞科技；无兵营速科技可当骗招',second:'小 Y 几乎无脑（对面小 Y+深渊→改 TC）',ban:'HF 别 ban（拆家主场）；反 TR 只需大 G+萨满顶住'}
+};
+let curQuick='hum';
+function renderQuick(){
+  const q=QUICK[curQuick];
+  $('#quickBody').innerHTML=`
+   <div class="card"><h3>对 ${q.race}</h3>
+    <div class="cbar"><span class="t" style="width:96px">首发英雄</span><span style="color:var(--gold);font-weight:700">${q.hero}</span></div>
+    <div class="note" style="margin:2px 0 8px">${q.why}</div>
+    <div class="cbar"><span class="t" style="width:96px">开局主线</span><span style="flex:1">${q.open}</span></div>
+    <div class="cbar"><span class="t" style="width:96px">二发常客</span><span style="flex:1">${q.second}</span></div>
+    <div class="cbar"><span class="t" style="width:96px">保 / ban</span><span style="flex:1">${q.ban}</span></div>
+   </div>
+   <div class="card" style="margin-top:12px"><h3>三个通用原则</h3>
+    <div style="margin-top:6px">① 对面 TR 流行或自己怕 TR → 先知开局（比剑圣抗 TR）<br>
+    ② 开局三选一的开关在商店时机：一出门就骚扰=商店压在英雄前；安心练级=晚补<br>
+    ③ 无兵营速科技是骗招储备不是主线：打 UD、镜像偶尔用</div></div>`;
+  [...$('#quickRace').children].forEach(b=>b.classList.toggle('on',b.dataset.k===curQuick));
+}
+Object.keys(QUICK).forEach(k=>{
+  const b=document.createElement('button');b.textContent=QUICK[k].race;b.dataset.k=k;
+  b.onclick=()=>{curQuick=k;renderQuick();saveState();};
+  $('#quickRace').appendChild(b);
+});
+renderQuick();
+
 coachLoad();renderCoach();
 function gotoHash(){
   var h=(location.hash||'').slice(1); if(!h)return;
