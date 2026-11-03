@@ -725,12 +725,19 @@ function coachSave(){
 }
 function gkey(g){return (g.ts||0)+'|'+(g.file||'')+'|'+(g.players||[]).map(p=>p.name).sort().join(',')}
 function coachMerge(games){
-  const seen=new Set(coachGames.map(gkey));let n=0;
+  const seen=new Set(coachGames.map(gkey));let n=0,upgraded=0;
   (games||[]).forEach(g=>{
-    if(g&&Array.isArray(g.players)&&g.players.length){const k=gkey(g);
-      if(!seen.has(k)){coachGames.push(g);seen.add(k);n++;}}
+    if(!(g&&Array.isArray(g.players)&&g.players.length))return;
+    const k=gkey(g);
+    const isNewFmt=g.me||g.coach_v2;
+    const idx=coachGames.findIndex(x=>gkey(x)===k);
+    if(idx<0){coachGames.push(g);seen.add(k);n++;}
+    else if(isNewFmt&&!(coachGames[idx].me||coachGames[idx].coach_v2)){
+      coachGames[idx]=g;upgraded++;   // 旧格式记录被新格式原位升级
+    }
   });
   coachGames.sort((a,b)=>(a.ts||0)-(b.ts||0));
+  window.__lastUpgrade=upgraded;
   return n;
 }
 /* 兼容三种文件: opponents.json{games} / 纯数组 / 单局analysis{meta,players} */
@@ -866,10 +873,16 @@ function coachImportFile(f){
     try{games=coachParse(JSON.parse(rd.result),f.name,f.lastModified)}catch(e){alert('JSON 解析失败: '+e.message);return;}
     if(!games.length){alert('没认出有效数据（支持 opponents.json / 导出备份 / 单局 analysis.json）');return;}
     const n=coachMerge(games);
-    if(!coachMe)coachMe=inferMe();
-    $('#coachMe').value=coachMe;
+    const withMe=games.filter(g=>g.me);
+    if(withMe.length){
+      coachMe=withMe[withMe.length-1].me;   // 数据源自带归属, 覆盖手选
+    } else if(!coachMe){
+      coachMe=inferMe();
+    }
     coachSave();renderCoach();
-    alert('导入完成: 新增 '+n+' 局 (重复跳过 '+(games.length-n)+' 局)，当前共 '+coachGames.length+' 局');
+    const up=window.__lastUpgrade||0;
+    alert('导入完成: 新增 '+n+' 局'+(up?' (旧格式升级 '+up+' 局)':'')+'，当前共 '+coachGames.length+' 局'
+      +(withMe.length?'\n身份已按数据归属设为「'+coachMe+'」':''));
   };
   rd.readAsText(f);
 }
