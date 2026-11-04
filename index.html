@@ -48,6 +48,7 @@ section.on{display:block}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 .mapbox{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000}
 .mapbox img{display:block;width:100%;height:auto}
+.ctag{display:inline-block;padding:1px 8px;border-radius:4px;font-size:12px;margin:2px;background:#2a2b33;color:var(--sub)}
 .tag{position:absolute;transform:translate(-50%,-50%);background:#141418cc;border:1px solid var(--goldline);
   color:var(--gold);font-weight:700;font-size:12px;border-radius:5px;padding:1px 5px;z-index:4;pointer-events:none}
 .mine{color:#ffd23f}
@@ -879,7 +880,7 @@ $('#coachList').addEventListener('click',e=>{
     +`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>输因 / 教训标注</b> <span class="u">(点选, 再点取消; 存本机)</span><div style="margin-top:4px">`
     +TAGSLIST.map(t=>{
         const on=(coachTags[gkey(g)]||[]).indexOf(t)>=0;
-        return `<span class="tag" data-tag="${t}" style="cursor:pointer;${on?'background:var(--gold);color:#141418':'background:#2a2b33;color:var(--sub)'};margin:2px">${t}</span>`;
+        return `<span class="ctag" data-tag="${t}" style="cursor:pointer;${on?'background:var(--gold);color:#141418':''}">${t}</span>`;
       }).join('')
     +`</div></div></td>`;
   tr.after(d);
@@ -949,7 +950,7 @@ function renderTagSum(){
     : '还没有标签。展开任意败局的详情打标签，积累到 10 局以上就能看出模式。';
 }
 $('#coachList').addEventListener('click',e=>{
-  const sp=e.target.closest('.tag[data-tag]');
+  const sp=e.target.closest('.ctag[data-tag]');
   if(!sp)return;
   const tr=sp.closest('tr.det').previousElementSibling;
   const g=coachGames[+tr.dataset.gi];if(!g)return;
