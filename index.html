@@ -49,6 +49,15 @@ section.on{display:block}
 .mapbox{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000}
 .mapbox img{display:block;width:100%;height:auto}
 .ctag{display:inline-block;padding:1px 8px;border-radius:4px;font-size:12px;margin:2px;background:#2a2b33;color:var(--sub)}
+table.ct{width:100%;border-collapse:collapse;font-size:12.5px}
+table.ct td{padding:1px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.ct td.t{color:var(--sub);text-align:center;white-space:nowrap;width:56px;font-size:11.5px}
+table.ct td.r{text-align:right}table.ct td.m{color:var(--sub);text-align:center;width:44px;font-size:11px}
+.apmrow{display:flex;align-items:center;gap:6px;margin:1px 0}
+.apmrow .lb{width:30px;color:var(--sub);font-size:11px}
+.apmrow .bar{flex:1;height:8px;background:#2a2b33;border-radius:4px;overflow:hidden}
+.apmrow .bar i{display:block;height:100%;background:var(--gold)}
+.apmrow .v{width:34px;text-align:right;font-size:11px;color:var(--sub)}
 .tag{position:absolute;transform:translate(-50%,-50%);background:#141418cc;border:1px solid var(--goldline);
   color:var(--gold);font-weight:700;font-size:12px;border-radius:5px;padding:1px 5px;z-index:4;pointer-events:none}
 .mine{color:#ffd23f}
@@ -865,6 +874,38 @@ $('#coachList').addEventListener('click',e=>{
   const T2CN={tier2:'二本',tier3:'三本'};
   const techStr=t=>Object.entries(t||{}).map(([k,v])=>(T2CN[k]||k)+' '+Math.floor(v/60)+':'+('0'+Math.floor(v%60)).slice(-2)).join(', ')||'—';
   const d=document.createElement('tr');d.className='det';
+  // ---- 可视化: BO 左右时间轴 + 分分钟 APM (数据=新格式 detail 字段) ----
+  const dtl = g.detail || {};
+  const myD = dtl[coachMe] || {bo:[],apm:[]};
+  const oppName = Object.keys(dtl).find(n => n !== coachMe) || '';
+  const oppD = dtl[oppName] || {bo:[],apm:[]};
+  const MARK = {build:'建',train:'训',tech:'升',hero:'英雄',skill:'技能',item:'道具',research:'研'};
+  const rows = {};
+  [['l',myD],['r',oppD]].forEach(([side,pd])=>{
+    (pd.bo||[]).forEach(e=>{
+      const k = Math.round(e.t);
+      (rows[k] = rows[k] || {l:[],r:[]})[side].push(e);
+    });
+  });
+  const fmtS = t => Math.floor(t/60)+':'+('0'+Math.floor(t%60)).slice(-2);
+  const tl = Object.keys(rows).map(Number).sort((a,b)=>a-b).map(t=>{
+    const cell = rows[t];
+    const ren = e => `[${MARK[e.kind]||'?'}] ${e.cn||e.id}`;
+    return `<tr><td class="r">${cell.l.map(ren).join('<br>')}</td>`
+      +`<td class="t">${fmtS(t)}</td>`
+      +`<td>${cell.r.map(ren).join('<br>')}</td></tr>`;
+  }).join('');
+  const tlHtml = tl
+    ? `<div style="margin-top:6px"><b>建造顺序时间轴</b> <span class="u">(前12分钟 · 左=${coachMe} 右=${oppName})</span>`
+      +`<table class="ct"><tr><th style="text-align:right">${coachMe}</th><th></th><th style="text-align:left">${oppName}</th></tr>${tl}</table></div>`
+    : '<div class="u" style="margin-top:4px">时间轴: 本记录为旧格式，重新收集后自动带上</div>';
+  const mxApm = Math.max.apply(null, (myD.apm||[1]).concat([1]));
+  const apmHtml = (myD.apm||[]).length
+    ? `<div style="margin-top:8px"><b>${coachMe} 分分钟 APM</b>${myD.apm.map((n,i)=>
+        `<div class="apmrow"><span class="lb">${('0'+i).slice(-2)}</span>`
+        +`<div class="bar"><i style="width:${Math.round(n/mxApm*100)}%"></i></div>`
+        +`<span class="v">${n}</span></div>`).join('')}</div>`
+    : '';
   const coachList = g.coach_v2 ? (g.coach_v2[coachMe] || [])
                 : (Array.isArray(g.coach) ? g.coach : []);
   const coach=coachList.map(c=>{
@@ -875,6 +916,7 @@ $('#coachList').addEventListener('click',e=>{
     +`<div>我方英雄: ${(m&&m.heroes||[]).join('→')||'—'} ｜ 我方升本: ${techStr(m&&m.tech)} ｜ APM: ${(m&&m.apm)||'—'}</div>`
     +`<div>对手升本: ${techStr(o&&o.tech)} ｜ 对手 APM: ${(o&&o.apm)||'—'}</div>`
     +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div>`
+    +`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px">${tlHtml}${apmHtml}</div>`
     +(coach?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>教练点评</b>${coach}</div>`
            :'<div class="u" style="margin-top:4px">本记录暂无该视角的点评 (旧格式只有录入者视角，重新收集后自动补全)</div>')
     +`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>输因 / 教训标注</b> <span class="u">(点选, 再点取消; 存本机)</span><div style="margin-top:4px">`

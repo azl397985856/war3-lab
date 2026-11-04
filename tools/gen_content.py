@@ -152,7 +152,23 @@ def page_frag(path, frag_id):
 
 micro = build(MICRO_ARTICLE)
 micro.append(page_frag(MICRO_PAGE, 'ref'))
-creep = [page_frag(CREEP_PAGE, 'creep')]
+def page_subfrags(path, prefix):
+    """### 拆卡: ls[0] 是页标题, 每个 ### 一张卡, ### 前内容并入第一卡。"""
+    ls = open(path).read().split('\n')
+    idxs = [i for i, l in enumerate(ls) if l.startswith('### ')]
+    res = []
+    intro_end = idxs[0] if idxs else len(ls)
+    if any(l.strip() for l in ls[1:intro_end]):
+        res.append({'id': prefix + '-0', 'title': strip_num(ls[0].lstrip('#').strip()),
+                    'html': to_html(ls[1:intro_end])})
+    for k, i in enumerate(idxs):
+        end = idxs[k + 1] if k + 1 < len(idxs) else len(ls)
+        res.append({'id': prefix + '-' + str(k + 1),
+                    'title': strip_num(ls[i].lstrip('#').strip()),
+                    'html': to_html(ls[i + 1:end])})
+    return res
+
+creep = page_subfrags(CREEP_PAGE, 'creep')
 t41 = build(['### 4.1'])[0]
 t46 = build(['### 4.6'])[0]
 content = {
