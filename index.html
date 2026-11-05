@@ -196,7 +196,7 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
     <button data-t="micro">微操</button>
     <button data-t="matrix">攻防克制</button>
     <button data-t="ref">数据速查</button>
-    <button data-t="coach">复盘</button>
+    <button data-t="coach">实战复盘</button>
     <button data-t="dl">下载资源</button>
     <button data-t="about">关于我</button>
   </nav>
@@ -365,11 +365,47 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
   <div class="note" style="margin-top:18px">完整攻略见博客《让魔兽再次伟大》：<a href="https://lucifer.ren/blog/2025/03/20/war3-website/" target="_blank">lucifer.ren/blog/2025/03/20/war3-website/</a></div>
 </section>
 
-<!-- ============ 复盘（纯前端导入, 数据不出本机） ============ -->
+<!-- ============ 实战复盘 (站主战绩 + AI 复盘提示词) ============ -->
 <section id="coach">
-  <h2 class="sec">对局复盘</h2>
-  <div class="note">私人数据 · 纯本地：导入 war3-coach 工具生成的 <b>opponents.json</b>（工具目录 app/data/ 下，或带回 zip 里的 state/opponents.json）。
-  数据只存在本浏览器 localStorage，<b>不上传任何服务器</b>；换浏览器或清缓存前先「导出备份」。</div>
+  <h2 class="sec">实战复盘 <span class="note" id="coachUpdated"></span></h2>
+  <div id="pubBody"></div>
+
+  <div class="card" style="margin-top:16px"><h3>想给自己的对局做 AI 复盘？拿走这段提示词</h3>
+    <div class="note">回放文件（.w3g/.nwg）+ 一个能读写本地文件的 AI（ZCode / Claude Code 等），贴上以下提示词即可。
+    它浓缩了本站的全部复盘方法论：KK 胜负信号规则、队列模拟断档口径、转型应对检测、反模板输出。</div>
+    <details style="margin-top:8px"><summary class="u" style="cursor:pointer;font-size:14px">展开完整提示词 ▾</summary>
+      <pre id="promptText" style="margin-top:8px;white-space:pre-wrap;background:#141418;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:12.5px;line-height:1.7;user-select:all">请分析这个魔兽争霸3回放文件（.w3g 经典格式；网易系平台是 GRBN 包装——在文件里搜 "Warcraft III recorded game" 签名，从那里开始按标准 w3g 解析：头部后是 zlib 压缩数据块流）。
+
+【需要提取】
+1. 元数据：版本、地图、时长、玩家（名字/种族/队伍；队伍 12/24 是观察者）
+2. 建造顺序（精确到秒）：解析动作流里的 ability 事件——训练单位/买英雄（fourCC 如 opeo=苦工 ogru=步兵 Obla=剑圣）、造建筑（带坐标的 ability，如 oalt=祭坛 otrb=地洞）、升本研究（R 开头）、学技能（A 开头）；数值型 fourCC（尾部 \r\x00）是移动/攻击指令，跳过
+3. 分分钟 APM（有效操作计数）
+4. 升本时点：ogre→ostr→ofrt（ORC）/ htow→hkee→hcas（HUM）等 T2/T3 事件；开矿=远离出生点的新主基地
+5. 部队构成时间线：10/15/20 分钟的累计训练量对比
+6. 英雄等级曲线：每次学技能=升 1 级；5/10/15 分钟和终局双方对比
+7. 苦工生产空闲（队列模拟口径）：点击入队串行 15 秒/个，攒队列不罚——只统计生产设施真正空转的时间（上一个出生后到下一次点击前）。业余参考：<15s 优秀 <30s 良好
+8. 胜负判定优先级：
+   a) LeftGame 事件 resultflag：0x09=胜 0x08=败 0x0d 且游戏 5 秒内结束=败（KK 平台认输信号）
+   b) 末段 60 秒内聊天 'gg' 且游戏随即结束=该玩家认输（双方都打 gg=平局致谢不判）；聊天事件字段是 msg
+   c) 聊天 '-draw' 60 秒内结束=协商平局
+   d) 尾盘盘面推断：终局英雄等级差≥3 级 + 尾盘 3 分钟生产停摆差>2 分钟 → 推断（标注置信度）
+   e) 都没有 → 标「未知」，不要编
+9. 核心输点（输局只给一条最致命的，检测不到就说不确定，禁止堆砌模板）：
+   - 对面空军≥3 成型且我方全程 0 蝙蝠 → 空军应对失败（hgyr=飞行机器 hgry=狮鹫）
+   - 对面驱散海≥12（小精灵/破法/女妖）且我方狼骑≥3 → 网体系被克，该转型
+   - 对面奶系≥3（雕像/牧师）且我方 0 白牛 → 打不死奶阵容
+   - 15 分钟英雄等级差≤-2 或 5 级时点落后≥90 秒 → 二本转型期掉了节奏
+10. 输出：每局一张卡——【核心输点】一句话 + 数据证据 + 一个可执行的练习动作。先讲数据证明了什么，再讲下一局练什么（一次只练一件）。
+
+我方玩家名：lucifer（兽族）。</pre>
+      <button class="ghost" id="copyPrompt" style="margin-top:8px">复制提示词</button>
+    </details>
+    <div class="note" style="margin-top:8px">不装 AI 工具的路线：用开源命令行 <a href="https://github.com/azl397985856/war3-coach" target="_blank" rel="noopener">war3-coach</a>（免费，本站战绩数据由它生成）先解析出 JSON，再连同 JSON 让任意 AI 解读。</div>
+  </div>
+
+  <details style="margin-top:14px">
+    <summary class="u" style="cursor:pointer">高级：导入自己的分析 JSON（需先用 war3-coach 或 AI 生成）</summary>
+    <div style="margin-top:8px">
   <div id="coachDrop" style="margin-top:12px">点击选择 或 拖入 opponents.json / war3-coach 导出文件<br>
     <span style="font-size:12px">重复导入自动去重合并，可累积多个日期的文件</span></div>
   <input type="file" id="coachFile" accept=".json" style="display:none">
@@ -397,6 +433,7 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
       <div style="overflow-x:auto;margin-top:8px"><table class="clist" id="coachList"></table></div>
     </div>
   </div>
+  </details>
 </section>
 
 </div>
@@ -409,6 +446,7 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
 
 <script>
 document.write('<script src="data.js?v='+Date.now()+'"><\/script>');
+document.write('<script src="coach-data.js?v='+Date.now()+'"><\/script>');
 document.write('<script src="content.js?v='+Date.now()+'"><\/script>');
 </script>
 <script>
@@ -1130,6 +1168,99 @@ Object.keys(QUICK).forEach(k=>{
   $('#quickRace').appendChild(b);
 });
 renderQuick();
+
+/* ---------- 公开战绩 (静态数据 COACHDATA) ---------- */
+const RACEN={human:'人族',undead:'UD',nightelf:'NE',orc:'兽族',random:'随机'};
+function renderPub(){
+  if(typeof COACHDATA==='undefined'){return;}
+  const D=COACHDATA;
+  $('#coachUpdated').textContent='数据截至 '+D.updated+' · 由 war3-coach 自动生成 · '+D.total+' 局';
+  const decided=D.wins+D.losses;
+  const streak=(function(){let s='';for(const g of D.games.slice(-15)){if(g.result==='win')s+='✓';else if(g.result==='loss')s+='✗';}return s;})();
+  const byRace={};
+  D.games.forEach(g=>{if(g.result==='win'||g.result==='loss'){byRace[g.oppRace]=byRace[g.oppRace]||[0,0];
+    byRace[g.oppRace][0]+=g.result==='win'?1:0;byRace[g.oppRace][1]++;}});
+  const order=['undead','human','nightelf','orc','random'];
+  const bars=Object.keys(byRace).sort((a,b)=>order.indexOf(a)-order.indexOf(b)).map(r=>{
+    const [w,t]=byRace[r],pct=t?Math.round(w/t*100):0;
+    return `<div class="cbar"><span class="t">vs ${RACEN[r]||r}</span>`
+      +`<div class="bar"><i style="width:${pct}%"></i></div>`
+      +`<span class="v">${w}胜${t-w}负 (${pct}%)</span></div>`;}).join('');
+  const fmtT=t=>t?Math.floor(t/60)+':'+('0'+Math.floor(t%60)).slice(-2):'—';
+  const metricsRows=D.games.filter(g=>g.metrics);
+  const spark=(vals,w,h,goodDown)=>{
+    const n=vals.length;if(n<2)return'';
+    const mx=Math.max(...vals),mn=Math.min(...vals),rng=(mx-mn)||1;
+    const pts=vals.map((v,i)=>[(i/(n-1))*(w-4)+2,h-4-((v-mn)/rng)*(h-10)].map(x=>x.toFixed(1)).join(',')).join(' ');
+    const d=vals[n-1]-vals[n-2],better=goodDown?d<0:d>0;
+    return `<svg width="${w}" height="${h}" style="vertical-align:middle"><polyline points="${pts}" fill="none" stroke="var(--gold)" stroke-width="2"/></svg>`
+      +(n>=2?` <span style="color:${d===0?'var(--sub)':better?'var(--green)':'var(--red)'}">${d>0?'+':''}${Math.round(d*10)/10}</span>`:'');
+  };
+  const row=(label,vals,fmt,goodDown)=>{
+    const shown=vals.map(v=>v==null?0:v);
+    return `<div class="cbar"><span class="t" style="width:118px">${label}</span><span style="flex:0 0 160px">${spark(shown,150,34,goodDown)}</span>`
+      +`<span class="v" style="flex:1;text-align:left">${fmt(vals[vals.length-1])}</span></div>`;
+  };
+  const trend=metricsRows.length>=2
+    ? row('农民生产空闲(秒)',metricsRows.map(g=>g.metrics.gap_s),v=>v+' 秒',true)
+      +row('10分钟英雄等级',metricsRows.map(g=>g.metrics.lvl10),v=>'Lv '+v,false)
+      +row('升二本时点',metricsRows.map(g=>g.metrics.t2),fmtT,false)
+      +row('总APM',metricsRows.map(g=>g.metrics.apm),v=>Math.round(v),false)
+    : '<div class="note">数据积累中</div>';
+  const cores=D.games.filter(g=>g.core);
+  const coreCards=cores.map(g=>{
+    const res=g.result==='win'?'<span class="w">胜</span>':g.result==='loss'?'<span class="l">负</span>':'<span class="u">平</span>';
+    return `<div class="card" style="margin-top:10px"><b style="color:var(--gold)">${g.date.slice(5)} vs ${g.opp}</b> `
+      +`<span class="u">(${RACEN[g.oppRace]||g.oppRace})</span> ${res} <span class="u">${g.map}</span>`
+      +`<div style="margin-top:4px">${g.core}</div></div>`;}).join('');
+  const list=D.games.slice().reverse().map(g=>{
+    const res=g.result==='win'?'<span class="w">胜</span>':g.result==='loss'?'<span class="l">负</span>':g.result==='draw'?'<span class="u">平</span>':'<span class="u">?</span>';
+    return `<tr class="pgm" data-i="${D.games.indexOf(g)}"><td>${g.date.slice(5,10)}</td><td>${g.map}</td>`
+      +`<td>${RACEN[g.meRace]||g.meRace}</td><td>vs <b>${g.opp}</b><span class="u">(${RACEN[g.oppRace]||g.oppRace})</span></td>`
+      +`<td>${res}</td><td class="u">${(g.heroes||[]).join('→')}</td></tr>`;}).join('');
+  $('#pubBody').innerHTML=`
+    <div class="grid" style="margin-top:10px">
+      <div class="card"><div class="cstat">
+        <div><div class="n">${D.total}</div><div class="lab">总场次</div></div>
+        <div><div class="n">${decided?Math.round(D.wins/decided*100)+'%':'—'}</div><div class="lab">胜率</div></div>
+        <div><div class="n" style="font-size:20px">${streak||'—'}</div><div class="lab">最近</div></div>
+      </div>
+      <div class="note" style="margin-top:8px">KK 平台 1.27 天梯 · 兽族</div></div>
+      <div class="card"><h3>对各族胜率</h3>${bars||'<div class="note">积累中</div>'}</div>
+    </div>
+    <div class="card" style="margin-top:14px"><h3>成长趋势</h3>${trend}</div>
+    <div class="card" style="margin-top:14px"><h3>每局核心输点/赢因</h3>${coreCards||'<div class="note">积累中</div>'}</div>
+    <div class="card" style="margin-top:14px"><h3>对局列表</h3>
+      <div style="overflow-x:auto"><table class="clist"><tr><th>日期</th><th>地图</th><th>我方</th><th>对手</th><th>胜负</th><th>英雄</th></tr>${list}</table></div></div>`;
+  // 行点击展开详情
+  $('#pubBody').addEventListener('click',e=>{
+    const tr=e.target.closest('tr.pgm');if(!tr||tr.dataset.open)return;
+    tr.dataset.open='1';
+    const g=D.games[+tr.dataset.i];
+    const MARK={build:'建',train:'训',tech:'升',hero:'英雄',skill:'技能',item:'道具',research:'研'};
+    const rows={};
+    [['l',g.boMe],['r',g.boOpp]].forEach(([side,arr])=>(arr||[]).forEach(ev=>{
+      (rows[Math.round(ev.t)]=rows[Math.round(ev.t)]||{l:[],r:[]})[side].push(ev);}));
+    const tl=Object.keys(rows).map(Number).sort((a,b)=>a-b).map(t=>{
+      const c=rows[t];const ren=e=>`[${MARK[e.kind]||'?'}] ${e.cn||e.id}`;
+      return `<tr><td class="r">${c.l.map(ren).join('<br>')}</td><td class="t">${fmtT(t)}</td><td>${c.r.map(ren).join('<br>')}</td></tr>`;}).join('');
+    const mx=Math.max(...(g.apm||[1]),1);
+    const apm=(g.apm||[]).map((n,i)=>`<div class="apmrow"><span class="lb">${('0'+i).slice(-2)}</span>`
+      +`<div class="bar"><i style="width:${Math.round(n/mx*100)}%"></i></div><span class="v">${n}</span></div>`).join('');
+    const d=document.createElement('tr');d.className='det';
+    d.innerHTML=`<td colspan="6">`
+      +(tl?`<b>建造顺序时间轴</b> <span class="u">(左=${g.me} 右=${g.opp}，前12分钟)</span><table class="ct">${tl}</table>`:'')
+      +(apm?`<div style="margin-top:8px"><b>分分钟 APM</b>${apm}</div>`:'')
+      +`</td>`;
+    tr.after(d);
+  });
+}
+renderPub();
+const cpBtn=document.getElementById('copyPrompt');
+if(cpBtn)cpBtn.onclick=()=>{
+  navigator.clipboard.writeText(document.getElementById('promptText').textContent)
+    .then(()=>{cpBtn.textContent='已复制 ✓';});
+};
 
 coachLoad();renderCoach();
 function gotoHash(){
