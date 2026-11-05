@@ -917,14 +917,26 @@ $('#coachList').addEventListener('click',e=>{
     : '';
   const coachList = g.coach_v2 ? (g.coach_v2[coachMe] || [])
                 : (Array.isArray(g.coach) ? g.coach : []);
-  const coach=coachList.map(c=>{
+  /* 核心条 (level=warn 的第一条/否则第一条) 突出, 其余折叠 */
+  const coreIdx = coachList.findIndex(c=>c.level==='warn');
+  const pick = coreIdx>=0 ? coreIdx : 0;
+  const coreHtml = coachList.length ? (()=>{
+    const c=coachList[pick];
+    return `<div style="margin:4px 0;padding:8px 10px;background:#26272f;border-left:4px solid var(--gold);border-radius:6px">`
+      +`<b style="color:var(--gold)">核心: ${c.title}</b><br>${c.body}</div>`;
+  })() : '';
+  const restHtml = coachList.filter((c,i)=>i!==pick).map(c=>{
     const ic={good:'✓',warn:'!',info:'·'}[c.level]||'·';
     return `<div style="margin:3px 0"><b style="color:var(--gold)">[${ic}] ${c.title}</b><br><span class="u">${c.body}</span></div>`;
   }).join('');
+  const coach = (coreHtml||restHtml)
+    ? coreHtml + (restHtml ? `<details style="margin-top:6px"><summary class="u" style="cursor:pointer">展开其余分析 (${coachList.length-(coreHtml?1:0)} 条)</summary><div style="margin-top:4px">${restHtml}</div></details>` : '')
+    : '';
   d.innerHTML=`<td colspan="6">`
     +`<div>我方英雄: ${(m&&m.heroes||[]).join('→')||'—'} ｜ 我方升本: ${techStr(m&&m.tech)} ｜ APM: ${(m&&m.apm)||'—'}</div>`
     +`<div>对手升本: ${techStr(o&&o.tech)} ｜ 对手 APM: ${(o&&o.apm)||'—'}</div>`
     +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div>`
+    +(g.core ? `<div style="margin:4px 0;padding:8px 10px;background:#26272f;border-left:4px solid var(--gold);border-radius:6px"><b style="color:var(--gold)">核心输点</b><br>${g.core}</div>` : '')
     +((g.guess && !effResult(g)) ? (() => {
         const gm = g.guess.guess === 'win' ? '你胜' : '你负';
         const cf = g.guess.confidence === 'high' ? '高' : '中';
