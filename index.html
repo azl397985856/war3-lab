@@ -796,8 +796,14 @@ function renderMeSelect(){
   sel.innerHTML=[...names].sort().map(n=>'<option'+(n===coachMe?' selected':'')+'>'+n+'</option>').join('')
     ||'<option value="">--</option>';
 }
-function myGame(g){return (g.players||[]).find(p=>p.name===coachMe&&p.result)
-  ||(g.players||[]).find(p=>p.result)||null}
+function myGame(g){
+  const r=effResult(g);
+  if(!r)return null;
+  const base=(g.players||[]).find(p=>p.name===coachMe&&p.result)
+           ||(g.players||[]).find(p=>p.result===r&&p.name!==coachMe)
+           ||(g.players||[]).find(p=>p.name===coachMe)||{};
+  return Object.assign({}, base, {result:r});
+}
 function oppGame(g){const m=myGame(g);
   return (g.players||[]).find(p=>p!==m&&p.name!==(m||{}).name)||null}
 function renderCoach(){
