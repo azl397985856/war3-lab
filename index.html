@@ -855,8 +855,11 @@ function renderCoachList(){
     const m=myGame(g),o=oppGame(g);
     const oname=(o&&o.name)||'?';
     if(q&&oname.toLowerCase().indexOf(q)<0)return;
-    const res=m&&m.result==='win'?'<span class="w">胜</span>':
-             (m&&m.result==='loss'?'<span class="l">负</span>':'<span class="u">?</span>');
+    const gres=(()=>{const r=effResult(g);if(!r&&g.guess)return g.guess.guess;return r;})();
+    const isGuess=!gres&&!m?.result&&g.guess;
+    const res=m&&m.result==='win'||gres==='win'?'<span class="w">胜</span>':
+             (m&&m.result==='loss'||gres==='loss'?'<span class="l">负</span>':
+             (gres==='draw'?'<span class="u">平</span>':'<span class="u">?</span>'));
     const heroes=(o&&o.heroes&&o.heroes.length)?o.heroes.join('→'):'';
     const gi=coachGames.length-1-ri;   // 原始索引, 详情行定位用
     rows.push(`<tr class="gm" data-gi="${gi}">`
@@ -922,6 +925,18 @@ $('#coachList').addEventListener('click',e=>{
     +`<div>我方英雄: ${(m&&m.heroes||[]).join('→')||'—'} ｜ 我方升本: ${techStr(m&&m.tech)} ｜ APM: ${(m&&m.apm)||'—'}</div>`
     +`<div>对手升本: ${techStr(o&&o.tech)} ｜ 对手 APM: ${(o&&o.apm)||'—'}</div>`
     +`<div>对手开局: ${(o&&o.bo_summary)||'—'}</div>`
+    +((g.guess && !effResult(g)) ? (() => {
+        const gm = g.guess.guess === 'win' ? '你胜' : '你负';
+        const cf = g.guess.confidence === 'high' ? '高' : '中';
+        const ev = (g.guess.evidence || []).join('；');
+        return '<div class="note" style="margin-top:4px">盘面推断: ' + gm + ' (' + cf
+          + '置信度)——' + ev + '。如与实际不符请手动改判。</div>';
+      })() : '')
+    +`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>胜负</b>
+       <span class="ctag" data-res="win" style="cursor:pointer;${effResult(g)==='win'?'background:var(--gold);color:#141418':''}">我胜</span>
+       <span class="ctag" data-res="loss" style="cursor:pointer;${effResult(g)==='loss'?'background:var(--gold);color:#141418':''}">我负</span>
+       <span class="ctag" data-res="" style="cursor:pointer;${!effResult(g)?'background:var(--gold);color:#141418':''}">未知</span>
+       <span class="u">（回放没写胜负的局，手动标一下；存本机）</span></div>`
     +`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px">${tlHtml}${apmHtml}</div>`
     +(coach?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b>教练点评</b>${coach}</div>`
            :'<div class="u" style="margin-top:4px">本记录暂无该视角的点评 (旧格式只有录入者视角，重新收集后自动补全)</div>')
@@ -976,6 +991,19 @@ $('#coachClear').onclick=()=>{
 };
 /* ---------- 输因标注 ---------- */
 const TAGSKEY='war3lab-coach-tags';
+const RESKEY='war3lab-coach-res';
+/* 手动改判: KK 部分局回放无胜负信号, 用户知道实际结果, 覆写存本机 */
+let resultOverride={};
+try{resultOverride=JSON.parse(localStorage.getItem(RESKEY)||'{}')}catch(e){resultOverride={}}
+function effResult(g){
+  const ov=resultOverride[gkey(g)];
+  if(ov)return ov;
+  const m=(g.players||[]).find(p=>p.name===coachMe&&p.result)||(g.players||[]).find(p=>p.result);
+  if(m&&m.result)return m.result;
+  /* 无信号局: 尾盘盘面推断 (置信度标注, 可手动改判) */
+  if(g.guess&&g.guess.confidence==='high')return g.guess.guess;
+  return null;
+}
 const TAGSLIST=['运营断档','被骚扰崩','团战操作','意识被抓','英雄打法','心态','微操细节','其他'];
 let coachTags={};
 try{coachTags=JSON.parse(localStorage.getItem(TAGSKEY)||'{}')}catch(e){coachTags={}}
@@ -998,6 +1026,19 @@ function renderTagSum(){
     : '还没有标签。展开任意败局的详情打标签，积累到 10 局以上就能看出模式。';
 }
 $('#coachList').addEventListener('click',e=>{
+  const rb=e.target.closest('.ctag[data-res]');
+  if(rb){
+    const tr=rb.closest('tr.det').previousElementSibling;
+    const g=coachGames[+tr.dataset.gi];if(!g)return;
+    const v=rb.dataset.res;
+    if(v)resultOverride[gkey(g)]=v;else delete resultOverride[gkey(g)];
+    localStorage.setItem(RESKEY,JSON.stringify(resultOverride));
+    renderCoach();
+    const gi=coachGames.indexOf(g);
+    const tr2=document.querySelector('#coachList tr.gm[data-gi="'+gi+'"]');
+    if(tr2)tr2.click();
+    return;
+  }
   const sp=e.target.closest('.ctag[data-tag]');
   if(!sp)return;
   const tr=sp.closest('tr.det').previousElementSibling;
