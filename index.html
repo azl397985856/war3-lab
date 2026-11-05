@@ -1218,7 +1218,14 @@ function renderPub(){
     return `<tr class="pgm" data-i="${D.games.indexOf(g)}"><td>${g.date.slice(5,10)}</td><td>${g.map}</td>`
       +`<td>${RACEN[g.meRace]||g.meRace}</td><td>vs <b>${g.opp}</b><span class="u">(${RACEN[g.oppRace]||g.oppRace})</span></td>`
       +`<td>${res}</td><td class="u">${(g.heroes||[]).join('→')}</td></tr>`;}).join('');
+  const diag=(D.diagnosis||{});
+  const adviceHtml=(diag.advice||[]).map((a,i)=>
+    `<div style="margin:${i? '10px':'0'} 0"><b style="color:var(--gold)">${i+1}. ${a[0]}</b><br><span class="u">${a[1]}</span></div>`).join('');
   $('#pubBody').innerHTML=`
+    <div class="card" style="border-left:4px solid var(--gold)"><h3>总体诊断 · 怎么提高</h3>
+      <div class="note" style="margin-top:4px">基于 ${diag.games||0} 局的数据模式 (核心输点分类: ${JSON.stringify(diag.cats||{})}, 生产空闲均值 ${diag.gapAvg||'-'}s)</div>
+      ${adviceHtml||'<div class="note">数据积累中</div>'}
+    </div>
     <div class="grid" style="margin-top:10px">
       <div class="card"><div class="cstat">
         <div><div class="n">${D.total}</div><div class="lab">总场次</div></div>
