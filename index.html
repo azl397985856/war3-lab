@@ -370,9 +370,13 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
   <h2 class="sec">实战复盘 <span class="note" id="coachUpdated"></span></h2>
   <div id="pubBody"></div>
 
-  <div class="card" style="margin-top:16px"><h3>想给自己的对局做 AI 复盘？拿走这段提示词</h3>
-    <div class="note">回放文件（.w3g/.nwg）+ 一个能读写本地文件的 AI（ZCode / Claude Code 等），贴上以下提示词即可。
-    它浓缩了本站的全部复盘方法论：KK 胜负信号规则、队列模拟断档口径、转型应对检测、反模板输出。</div>
+  <div class="card" style="margin-top:16px"><h3>想给自己的对局做同样的复盘？三条路线</h3>
+    <div style="margin-top:6px;font-size:13.5px">
+      <b>路线 A · 最省事（有 AI 工具）</b>：回放文件（.w3g/.nwg）+ 能读写本地文件的 AI（ZCode / Claude Code），贴上下面这段提示词——AI 自己解析回放、自己生成复盘。<br>
+      <b>路线 B · 不用 AI</b>：下载开源命令行 <a href="https://github.com/azl397985856/war3-coach" target="_blank" rel="noopener">war3-coach</a>，一条命令生成 HTML 战报（内置规则引擎：BO/APM/生产空闲/胜负推断/核心输点检测，不依赖任何 AI）。<br>
+      <b>路线 C · 什么都不装</b>：把回放文件夹发给会用的朋友/工具服务，或照 <a href="https://lucifer.ren/blog/2025/03/20/war3-website/" target="_blank">手册 10.2</a> 的三本账手动复盘。
+    </div>
+    <div class="note" style="margin-top:6px">提示词（路线 A 用）浓缩了本站全部复盘方法论：KK 胜负信号规则、队列模拟断档口径、转型应对检测、反模板输出。</div>
     <details style="margin-top:8px"><summary class="u" style="cursor:pointer;font-size:14px">展开完整提示词 ▾</summary>
       <pre id="promptText" style="margin-top:8px;white-space:pre-wrap;background:#141418;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:12.5px;line-height:1.7;user-select:all">请分析这个魔兽争霸3回放文件（.w3g 经典格式；网易系平台是 GRBN 包装——在文件里搜 "Warcraft III recorded game" 签名，从那里开始按标准 w3g 解析：头部后是 zlib 压缩数据块流）。
 
@@ -390,21 +394,21 @@ table.clist tr.det td{background:#1a1b21;color:var(--sub);font-size:12.5px}
    c) 聊天 '-draw' 60 秒内结束=协商平局
    d) 尾盘盘面推断：终局英雄等级差≥3 级 + 尾盘 3 分钟生产停摆差>2 分钟 → 推断（标注置信度）
    e) 都没有 → 标「未知」，不要编
-9. 核心输点（输局只给一条最致命的，检测不到就说不确定，禁止堆砌模板）：
+9. 机制备忘（说错会被玩家打脸）：狼骑诱捕/UD蛛网是物理束缚——不可被驱散（小精灵自爆/牧师驱散/毁灭吞噬都驱不掉网），且能网住魔免单位（破法者等），这是网的核心价值；UD 蜘蛛/雕像全是无甲（穿刺 150% 克制）；NE 的小精灵是工人，累计数量=经济规模，不是驱散威胁
+10. 核心输点（输局只给一条最致命的，检测不到就说不确定，禁止堆砌模板）：
    - 对面空军≥3 成型且我方全程 0 蝙蝠 → 空军应对失败（hgyr=飞行机器 hgry=狮鹫）
-   - 对面驱散海≥12（小精灵/破法/女妖）且我方狼骑≥3 → 网体系被克，该转型
-   - 对面奶系≥3（雕像/牧师）且我方 0 白牛 → 打不死奶阵容
+   - 对面 NE 慢科技（10 分钟人口量很低）成型期 12-18 分钟无压制 → 熊鹿成型后网体系难施展
+   - 对面奶系≥3（十胜石雕像/牧师）且我方 0 白牛 → 打不死奶阵容（UD 全无甲: 猎头/狂战士穿刺为主+白牛驱锁链骷髅）
    - 15 分钟英雄等级差≤-2 或 5 级时点落后≥90 秒 → 二本转型期掉了节奏
-10. 输出：每局一张卡——【核心输点】一句话 + 数据证据 + 一个可执行的练习动作。先讲数据证明了什么，再讲下一局练什么（一次只练一件）。
+11. 输出：每局一张卡——【核心输点】一句话 + 数据证据 + 一个可执行的练习动作。先讲数据证明了什么，再讲下一局练什么（一次只练一件）。
 
 我方玩家名：lucifer（兽族）。</pre>
       <button class="ghost" id="copyPrompt" style="margin-top:8px">复制提示词</button>
     </details>
-    <div class="note" style="margin-top:8px">不装 AI 工具的路线：用开源命令行 <a href="https://github.com/azl397985856/war3-coach" target="_blank" rel="noopener">war3-coach</a>（免费，本站战绩数据由它生成）先解析出 JSON，再连同 JSON 让任意 AI 解读。</div>
   </div>
 
   <details style="margin-top:14px">
-    <summary class="u" style="cursor:pointer">高级：导入自己的分析 JSON（需先用 war3-coach 或 AI 生成）</summary>
+    <summary class="u" style="cursor:pointer">高级：导入自己的分析 JSON（一般用不到——给想把自己 war3-coach 生成的数据贴在本站看的人）</summary>
     <div style="margin-top:8px">
   <div id="coachDrop" style="margin-top:12px">点击选择 或 拖入 opponents.json / war3-coach 导出文件<br>
     <span style="font-size:12px">重复导入自动去重合并，可累积多个日期的文件</span></div>
