@@ -1254,8 +1254,7 @@ function renderPub(){
     [['l',g.boMe],['r',g.boOpp]].forEach(([side,arr])=>(arr||[]).forEach(ev=>{
       if(!keyEv(ev))return;
       (rows[Math.round(ev.t)]=rows[Math.round(ev.t)]||{l:[],r:[]})[side].push(ev);}));
-    const marks=(g.marks||[]).map(m=>({t:m.t, mark:m.text}));
-    marks.forEach(m=>{(rows[Math.round(m.t)]=rows[Math.round(m.t)]||{l:[],r:[],m:[]});
+    (g.marks||[]).forEach(m=>{(rows[Math.round(m.t)]=rows[Math.round(m.t)]||{l:[],r:[]});
       rows[Math.round(m.t)].m=m.text;});
     const tl=Object.keys(rows).map(Number).sort((a,b)=>a-b).map(t=>{
       const c=rows[t];const ren=e=>`[${MARK[e.kind]||'?'}] ${e.cn||e.id}`;
