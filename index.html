@@ -1245,22 +1245,33 @@ function renderPub(){
       <div style="overflow-x:auto"><table class="clist"><tr><th>日期</th><th>地图</th><th>我方</th><th>对手</th><th>胜负</th><th>英雄</th></tr>${list}</table></div></div>`;
   // 行点击展开详情
   $('#pubBody').addEventListener('click',e=>{
-    const tr=e.target.closest('tr.pgm');if(!tr||tr.dataset.open)return;
+    const tr=e.target.closest('tr.pgm');if(!tr)return;
+    const nx=tr.nextElementSibling;
+    if(nx&&nx.classList.contains('det')){nx.remove();return;}   // 再次点击折叠
     tr.dataset.open='1';
     const g=D.games[+tr.dataset.i];
     const MARK={build:'建',train:'训',tech:'升',hero:'英雄',skill:'技能',item:'道具',research:'研'};
+    const KEYB=/^(ofor|obea|osld|otto|ovln|owtw|uslh|ugrv|utod|ubon|utom|usap|uzig|uzg1|uzg2|eaow|eaoe|edos|edob|edob|etrp|emow|hgra|hars|harm|hbla|hlum|gtw|hatw|otau)/;
+    const keyEv=e=>['tech','hero','research'].indexOf(e.kind)>=0
+      ||(e.kind==='build'&&(KEYB.test(e.id)||e.id==='oalt'||e.id==='obar'));
     const rows={};
     [['l',g.boMe],['r',g.boOpp]].forEach(([side,arr])=>(arr||[]).forEach(ev=>{
+      if(!keyEv(ev))return;
       (rows[Math.round(ev.t)]=rows[Math.round(ev.t)]||{l:[],r:[]})[side].push(ev);}));
+    const marks=(g.marks||[]).map(m=>({t:m.t, mark:m.text}));
+    marks.forEach(m=>{(rows[Math.round(m.t)]=rows[Math.round(m.t)]||{l:[],r:[],m:[]});
+      rows[Math.round(m.t)].m=m.text;});
     const tl=Object.keys(rows).map(Number).sort((a,b)=>a-b).map(t=>{
       const c=rows[t];const ren=e=>`[${MARK[e.kind]||'?'}] ${e.cn||e.id}`;
-      return `<tr><td class="r">${c.l.map(ren).join('<br>')}</td><td class="t">${fmtT(t)}</td><td>${c.r.map(ren).join('<br>')}</td></tr>`;}).join('');
+      const markHtml=c.m?`<div style="color:#e8554e;font-weight:600">⚠ ${c.m}</div>`:'';
+      return `<tr><td class="r">${c.l.map(ren).join('<br>')}</td><td class="t">${fmtT(t)}</td>`
+        +`<td>${c.r.map(ren).join('<br>')}${markHtml}</td></tr>`;}).join('');
     const mx=Math.max(...(g.apm||[1]),1);
     const apm=(g.apm||[]).map((n,i)=>`<div class="apmrow"><span class="lb">${('0'+i).slice(-2)}</span>`
       +`<div class="bar"><i style="width:${Math.round(n/mx*100)}%"></i></div><span class="v">${n}</span></div>`).join('');
     const d=document.createElement('tr');d.className='det';
     d.innerHTML=`<td colspan="6">`
-      +(tl?`<b>建造顺序时间轴</b> <span class="u">(左=${g.me} 右=${g.opp}，前12分钟)</span><table class="ct">${tl}</table>`:'')
+      +(tl?`<b>关键节点</b> <span class="u">(升本/英雄/科技/失误标记 · 左=${g.me} 右=${g.opp}，前12分钟)</span><table class="ct">${tl}</table>`:'')
       +(apm?`<div style="margin-top:8px"><b>分分钟 APM</b>${apm}</div>`:'')
       +`</td>`;
     tr.after(d);
