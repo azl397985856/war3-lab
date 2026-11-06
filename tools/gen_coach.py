@@ -29,6 +29,7 @@ def main():
             'heroes': me.get('heroes', []),
             'tech': me.get('tech', {}),
             'metrics': g.get('metrics'),
+            'marks': g.get('marks') or [],
             'boMe': [e for e in (d.get(g.get('me', ''), {}) or {}).get('bo', [])][:160],
             'boOpp': [e for e in (d.get(opp.get('name', ''), {}) or {}).get('bo', [])][:160],
             'apm': (d.get(g.get('me', ''), {}) or {}).get('apm', []),
