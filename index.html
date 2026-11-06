@@ -1243,12 +1243,8 @@ function renderPub(){
     <div class="card" style="margin-top:14px"><h3>每局核心输点/赢因</h3>${coreCards||'<div class="note">积累中</div>'}</div>
     <div class="card" style="margin-top:14px"><h3>对局列表</h3>
       <div style="overflow-x:auto"><table class="clist"><tr><th>日期</th><th>地图</th><th>我方</th><th>对手</th><th>胜负</th><th>英雄</th></tr>${list}</table></div></div>`;
-  // 行点击展开详情
-  $('#pubBody').addEventListener('click',e=>{
-    const tr=e.target.closest('tr.pgm');if(!tr)return;
-    const nx=tr.nextElementSibling;
-    if(nx&&nx.classList.contains('det')){nx.remove();return;}   // 再次点击折叠
-    tr.dataset.open='1';
+  // 行点击展开详情 (委托在全局绑一次)
+  window.__pubToggle=(tr)=>{
     const g=D.games[+tr.dataset.i];
     const MARK={build:'建',train:'训',tech:'升',hero:'英雄',skill:'技能',item:'道具',research:'研'};
     const KEYB=/^(ofor|obea|osld|otto|ovln|owtw|uslh|ugrv|utod|ubon|utom|usap|uzig|uzg1|uzg2|eaow|eaoe|edos|edob|edob|etrp|emow|hgra|hars|harm|hbla|hlum|gtw|hatw|otau)/;
@@ -1275,8 +1271,16 @@ function renderPub(){
       +(apm?`<div style="margin-top:8px"><b>分分钟 APM</b>${apm}</div>`:'')
       +`</td>`;
     tr.after(d);
-  });
+  };
 }
+$('#pubBody').addEventListener('click',e=>{
+  const tr=e.target.closest('tr.pgm');
+  if(!tr)return;
+  const nx=tr.nextElementSibling;
+  if(nx&&nx.classList.contains('det')){nx.remove();return;}
+  tr.dataset.open='1';
+  window.__pubToggle(tr);
+});
 renderPub();
 const cpBtn=document.getElementById('copyPrompt');
 if(cpBtn)cpBtn.onclick=()=>{
